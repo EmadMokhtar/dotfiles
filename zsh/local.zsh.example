@@ -1,0 +1,9 @@
+# Copy this file to ~/.config/zsh/local.zsh and edit it.
+# That file is NOT tracked in git. Put values here that only make sense on
+# one machine (external drives, work-only settings, ...).
+
+# Ollama models on an external drive
+# export OLLAMA_MODELS="/Volumes/External"
+
+# OpenAudible library on an external drive
+# export OPENAUDIBLE_HOME="/Volumes/External/OpenAudible"

@@ -1,0 +1,16 @@
+# ~/.zprofile — login shells only. Managed by the dotfiles repo (symlink).
+
+# Homebrew on Apple Silicon: puts /opt/homebrew/{bin,sbin} on PATH and sets HOMEBREW_PREFIX.
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# add_path_if_dir <dir> — append to PATH only when the directory exists.
+add_path_if_dir() { [[ -d "$1" ]] && export PATH="$PATH:$1"; }
+
+add_path_if_dir "$HOME/.docker/bin"
+add_path_if_dir "$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
+add_path_if_dir "/Applications/Obsidian.app/Contents/MacOS"
+
+# python.org installer for 3.12 (kept from the baseline machine; pyenv shims
+# are added later in .zshrc and take precedence).
+[[ -d /Library/Frameworks/Python.framework/Versions/3.12/bin ]] &&
+  export PATH="/Library/Frameworks/Python.framework/Versions/3.12/bin:$PATH"
