@@ -1,0 +1,203 @@
+{
+  "agentPushNotifEnabled" : true,
+  "editorMode" : "normal",
+  "effortLevel" : "xhigh",
+  "enabledPlugins" : {
+    "chrome-devtools-mcp@claude-plugins-official" : true,
+    "claude-code-setup@claude-plugins-official" : true,
+    "claude-md-management@claude-plugins-official" : true,
+    "code-review@claude-plugins-official" : true,
+    "context7@claude-plugins-official" : true,
+    "engram@engram" : false,
+    "frontend-design@claude-plugins-official" : true,
+    "github@claude-plugins-official" : true,
+    "gopls-lsp@claude-plugins-official" : true,
+    "impeccable@impeccable" : true,
+    "playwright@claude-plugins-official" : true,
+    "pr-review-toolkit@claude-plugins-official" : true,
+    "ralph-loop@claude-plugins-official" : true,
+    "skill-creator@claude-plugins-official" : true,
+    "superpowers@claude-plugins-official" : true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill" : true,
+    "warp@claude-code-warp" : true,
+    "watermarks-remover@watermarks-remover" : true,
+    "worktrunk@worktrunk" : true
+  },
+  "env" : {
+
+  },
+  "extraKnownMarketplaces" : {
+    "claude-code-warp" : {
+      "source" : {
+        "repo" : "warpdotdev\/claude-code-warp",
+        "source" : "github"
+      }
+    },
+    "engram" : {
+      "source" : {
+        "repo" : "Gentleman-Programming\/engram",
+        "source" : "github"
+      }
+    },
+    "impeccable" : {
+      "source" : {
+        "repo" : "pbakaus\/impeccable",
+        "source" : "github"
+      }
+    },
+    "ui-ux-pro-max-skill" : {
+      "source" : {
+        "repo" : "nextlevelbuilder\/ui-ux-pro-max-skill",
+        "source" : "github"
+      }
+    },
+    "watermarks-remover" : {
+      "source" : {
+        "repo" : "guillaumemeyer\/watermarks-remover",
+        "source" : "github"
+      }
+    },
+    "worktrunk" : {
+      "source" : {
+        "repo" : "max-sixty\/worktrunk",
+        "source" : "github"
+      }
+    }
+  },
+  "hooks" : {
+    "Notification" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PostToolUse" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart" : [
+      {
+        "hooks" : [
+          {
+            "command" : "~\/.claude\/hooks\/cbm-session-reminder",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "startup|resume|clear|compact"
+      },
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "Stop" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "StopFailure" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/emadmokhtar\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate" : [
+      {
+        "hooks" : [
+          {
+            "command" : "bash ~\/.claude\/hooks\/worktree-create.sh",
+            "type" : "command"
+          }
+        ]
+      }
+    ]
+  },
+  "inputNeededNotifEnabled" : true,
+  "modelSettings" : {
+    "claude-opus-5" : {
+      "effortLevel" : "xhigh"
+    }
+  },
+  "outputStyle" : "Concise",
+  "remoteControlAtStartup" : false,
+  "skipDangerousModePermissionPrompt" : true,
+  "statusLine" : {
+    "command" : "bash ~\/.claude\/statusline-command.sh",
+    "type" : "command"
+  },
+  "tui" : "fullscreen",
+  "verbose" : true
+}
