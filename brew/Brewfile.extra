@@ -1,0 +1,17 @@
+# Hardware, audio and music apps. Install with: ./bootstrap.sh --extra
+# (or: brew bundle --file brew/Brewfile.extra)
+
+cask "caldigit-docking-utility"
+cask "elgato-control-center"
+cask "elgato-stream-deck"
+cask "elgato-wave-link"
+cask "ik-product-manager"            # installs AmpliTube / TONEX
+cask "ilok-license-manager"
+cask "insta360-link-controller"
+cask "mediahuman-audio-converter"
+cask "openaudible"
+cask "openrgb"
+cask "paragon-extfs"
+cask "qbittorrent"
+cask "reaper"
+cask "steinberg-download-assistant"  # installs Cubase
