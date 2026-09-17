@@ -59,9 +59,7 @@ dotfiles/
 │   ├── gitconfig             → ~/.gitconfig
 │   └── ignore                → ~/.config/git/ignore
 ├── editors/zed/
-│   ├── settings.json         → ~/.config/zed/settings.json (token removed)
-│   ├── themes/               → ~/.config/zed/themes
-│   └── prompts/              → ~/.config/zed/prompts
+│   └── settings.json         → ~/.config/zed/settings.json (token removed)
 ├── claude/
 │   ├── settings.json         → ~/.claude/settings.json
 │   ├── CLAUDE.md             → ~/.claude/CLAUDE.md
@@ -145,8 +143,6 @@ zsh/p10k.zsh              ~/.p10k.zsh
 git/gitconfig             ~/.gitconfig
 git/ignore                ~/.config/git/ignore
 editors/zed/settings.json ~/.config/zed/settings.json
-editors/zed/themes        ~/.config/zed/themes
-editors/zed/prompts       ~/.config/zed/prompts
 claude/settings.json      ~/.claude/settings.json
 claude/CLAUDE.md          ~/.claude/CLAUDE.md
 claude/statusline-command.sh ~/.claude/statusline-command.sh
@@ -204,7 +200,9 @@ that checks the directory exists and is not already in `$PATH`:
 - `GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"` — kept; the
   token is read from gh's keychain at shell start, never stored.
 
-**aliases.zsh** — kept: `zshconfig`, `vimdiff`, `vim`, `vi`, `ovim`, `gfgl`,
+**aliases.zsh** — kept: `zshconfig`, `vimdiff`, `vim`, `vi`, `ovim` (now
+`command vim`, because zsh expands aliases inside alias text and `vim` →
+`nvim` made `ovim` open neovim too), `gfgl`,
 `dotfilesShow`, `dotfilesHide`, `k`, `kx`, `tf`, `dc`, `dk`, `fabric`
 (guarded by file check). Fixed: `flush_dns` now runs
 `sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder`.
@@ -244,11 +242,11 @@ anomalyco/tap  codecrafters-io/tap  gentleman-programming/tap  jakehilborn/jakeh
 Formulae — the current `brew leaves` minus pure libraries (`aom`, `jpeg-xl`,
 `libass`, `librist`, `libsolv`, `portaudio`, `sdl12-compat`, `zlib` — they
 return as dependencies) and minus `node` (nvm manages Node instead; nothing
-installed depends on the Homebrew `node`), plus `nvm`, `pyenv`,
+installed depends on the Homebrew `node`), plus `bats-core`, `nvm`, `pyenv`,
 `pyenv-virtualenv`, `shellcheck` and `ykman`:
 
 ```
-autojump bat cloudflared cmake cookiecutter ffmpeg gh git glow gnupg
+autojump bat bats-core cloudflared cmake cookiecutter ffmpeg gh git glow gnupg
 golang-migrate golangci-lint helm just lsusb lychee minikube mycli neovim nvm
 pgcli pinentry-mac postgresql@15 protobuf pyenv pyenv-virtualenv shellcheck
 terraform tesseract uv wget worktrunk ykman yt-dlp
@@ -338,15 +336,15 @@ set today are written. Grouped by domain; comments explain each line.
 | com.apple.WindowManager | EnableTilingByEdgeDrag | true |
 | com.apple.ActivityMonitor | ShowCategory | 100 |
 
-The script ends with `killall Finder Dock SystemUIServer cfprefsd` so the
-changes take effect. Keys that need Full Disk Access (Safari) are not included.
+The script ends with `killall Finder Dock SystemUIServer` so the changes take
+effect (`cfprefsd` is left alone: killing it can discard writes in flight). Keys that need Full Disk Access (Safari) are not included.
 
 ## 8. App configuration and exclusions
 
 | App | In repo | Note |
 |---|---|---|
 | git | `gitconfig`, `ignore` | `gpg.ssh.program` keeps the absolute 1Password app path; `commit.gpgsign=false` as today. |
-| Zed | `settings.json`, `themes/`, `prompts/` | `github_personal_access_token` line **removed**. `conversations/`, `settings_backup.json` excluded. |
+| Zed | `settings.json` | `github_personal_access_token` line **removed**. `themes/` (empty), `prompts/` (binary LMDB database), `conversations/`, `settings_backup.json` excluded. |
 | Claude Code | `settings.json`, `CLAUDE.md`, `statusline-command.sh`, `hooks/`, `skills/` | Everything else in `~/.claude` (sessions, cache, history, plugin cache, telemetry) excluded. |
 | iTerm2 | `com.googlecode.iterm2.plist` | Exported once from current prefs (`defaults export`). iTerm2 then reads/writes the repo copy. |
 | oh-my-zsh | nothing | Cloned by bootstrap; `custom/` content comes from the clones above. |
@@ -379,7 +377,7 @@ Recommendation to the owner: revoke it on GitHub.
 
 ## 10. Testing
 
-1. `shellcheck` on every `.sh` file (added to the Brewfile as `shellcheck`).
+1. `shellcheck` on every `.sh` file and `bats tests/` (both tools in the Brewfile).
 2. `./bootstrap.sh --dry-run` on this machine — output reviewed by hand.
 3. `./bootstrap.sh` on this machine:
    - originals land in `~/.dotfiles-backup/<timestamp>/`;
