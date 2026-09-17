@@ -3,5 +3,4 @@ zsh/local.zsh
 .DS_Store
 iterm2/*.plist.bak
 .superpowers/
-docs/superpowers/
 tests/.bats-tmp/

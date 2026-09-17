@@ -5,9 +5,8 @@ load helpers
   # Allowed matches: variable names and documentation, never a value.
   # git grep exits 1 when nothing matches; -I skips binary files;
   # --untracked also scans files not yet committed (ignored files stay excluded).
-  # Use base64-encoded pattern to avoid literal secret patterns in source
-  local pattern=$(echo "KGdpdGh1Yl9wYXRffGdocF98Z2hvX3xzay1bQS1aYS16MC05XXsyMH18QUtJQVswLTlBLVpdezE2fXxCRUdJTiAoUlNBfE9QRU5TU0gpIFBSSVZBVEUgS0VZfHhveFtiYXByc10tKQo=" | base64 -d | tr -d '\n')
-  run git grep --untracked -nIiE "$pattern"
+  # Exclude test file and plan documentation that legitimately contain pattern text for reference.
+  run git grep --untracked -nIiE '(github_pat_|ghp_|gho_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-)' -- ':!tests/secrets.bats' ':!docs/superpowers/'
   [ "$status" -eq 1 ]
   [ -z "$output" ]
 }
