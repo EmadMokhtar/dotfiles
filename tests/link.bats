@@ -37,7 +37,7 @@ setup() {
   link_file "$SRC/zsh/zshrc" "$HOME/.zshrc"
   run link_file "$SRC/zsh/zshrc" "$HOME/.zshrc"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"already linked"* ]]
+  [[ "$output" == *"already linked"* ]] || false
   [ ! -d "$BACKUP_DIR" ]
 }
 
@@ -58,7 +58,7 @@ setup() {
   DRY_RUN=1
   run link_file "$SRC/zsh/zshrc" "$HOME/.zshrc"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] ln -s"* ]]
+  [[ "$output" == *"[dry-run] ln -s"* ]] || false
   [ "$(cat "$HOME/.zshrc")" = "old" ]
   [ ! -d "$BACKUP_DIR" ]
 }

@@ -12,7 +12,7 @@ setup() {
   stub xcode-select 'exit 0'
   run step_xcode
   [ "$status" -eq 0 ]
-  [[ "$output" == *"skip"* ]]
+  [[ "$output" == *"skip"* ]] || false
   [ "$(calls_matching 'xcode-select --install')" -eq 0 ]
 }
 
@@ -20,20 +20,20 @@ setup() {
   stub xcode-select 'case "$1" in -p) exit 2;; esac'
   DRY_RUN=1 run step_xcode
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] xcode-select --install"* ]]
+  [[ "$output" == *"[dry-run] xcode-select --install"* ]] || false
 }
 
 @test "step_homebrew skips when brew exists" {
   stub brew 'case "$1" in shellenv) echo "export HOMEBREW_TEST=1";; esac'
   BREW_BIN="$STUB_BIN/brew" run step_homebrew
   [ "$status" -eq 0 ]
-  [[ "$output" == *"skip"* ]]
+  [[ "$output" == *"skip"* ]] || false
 }
 
 @test "step_homebrew dry-run prints the installer when brew is missing" {
   BREW_BIN="$BATS_TEST_TMPDIR/nope/brew" DRY_RUN=1 run step_homebrew
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] install Homebrew"* ]]
+  [[ "$output" == *"[dry-run] install Homebrew"* ]] || false
 }
 
 @test "step_brew_bundle installs the core Brewfile only by default" {

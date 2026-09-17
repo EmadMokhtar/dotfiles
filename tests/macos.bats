@@ -9,10 +9,10 @@ setup() {
 @test "defaults.sh dry-run prints every write and touches nothing" {
   DRY_RUN=1 run bash "$REPO_ROOT/macos/defaults.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] defaults write com.apple.dock autohide -bool true"* ]]
-  [[ "$output" == *"[dry-run] defaults write NSGlobalDomain KeyRepeat -int 2"* ]]
-  [[ "$output" == *"[dry-run] defaults write com.apple.finder AppleShowAllFiles -bool true"* ]]
-  [[ "$output" == *"[dry-run] killall Dock"* ]]
+  [[ "$output" == *"[dry-run] defaults write com.apple.dock autohide -bool true"* ]] || false
+  [[ "$output" == *"[dry-run] defaults write NSGlobalDomain KeyRepeat -int 2"* ]] || false
+  [[ "$output" == *"[dry-run] defaults write com.apple.finder AppleShowAllFiles -bool true"* ]] || false
+  [[ "$output" == *"[dry-run] killall Dock"* ]] || false
   [ "$(calls_matching 'defaults')" -eq 0 ]
 }
 
@@ -23,4 +23,11 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$(calls_matching 'defaults write com.apple.dock tilesize -int 48')" -eq 1 ]
   [ "$(calls_matching 'killall Finder')" -eq 1 ]
+}
+
+@test "defaults.sh returns 1 when defaults write fails" {
+  stub defaults 'exit 1'
+  stub killall
+  DRY_RUN=0 run bash "$REPO_ROOT/macos/defaults.sh"
+  [ "$status" -eq 1 ]
 }

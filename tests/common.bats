@@ -16,7 +16,7 @@ setup() {
   run run_cmd touch "$HOME/made"
   [ "$status" -eq 0 ]
   [ ! -e "$HOME/made" ]
-  [[ "$output" == *"[dry-run] touch $HOME/made"* ]]
+  [[ "$output" == *"[dry-run] touch $HOME/made"* ]] || false
 }
 
 @test "run_cmd returns the command's exit status" {
@@ -44,7 +44,7 @@ setup() {
   bad() { return 7; }
   run run_step "bad" bad
   [ "$status" -eq 7 ]
-  [[ "$output" == *"==> bad"* ]]
+  [[ "$output" == *"==> bad"* ]] || false
 }
 
 @test "clone_if_missing clones when the directory is absent" {
@@ -60,5 +60,5 @@ setup() {
   run clone_if_missing https://example.com/repo.git "$HOME/repo"
   [ "$status" -eq 0 ]
   [ "$(calls_matching 'git clone')" -eq 0 ]
-  [[ "$output" == *"skip"* ]]
+  [[ "$output" == *"skip"* ]] || false
 }

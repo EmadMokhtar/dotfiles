@@ -56,7 +56,7 @@ setup() {
   stub brew 'exit 1'
   run step_version_managers
   [ "$status" -eq 0 ]
-  [[ "$output" == *"nvm not installed"* ]]
+  [[ "$output" == *"nvm not installed"* ]] || false
 }
 
 @test "step_links links the real manifest into the sandbox home" {
@@ -76,7 +76,7 @@ setup() {
 @test "step_iterm2 skips when already configured" {
   stub defaults "case \"\$*\" in *PrefsCustomFolder) echo '$REPO_ROOT/iterm2';; *LoadPrefsFromCustomFolder) echo 1;; esac"
   run step_iterm2
-  [[ "$output" == *"skip"* ]]
+  [[ "$output" == *"skip"* ]] || false
   [ "$(calls_matching 'defaults write')" -eq 0 ]
 }
 
@@ -85,5 +85,5 @@ setup() {
   stub killall 'exit 99'
   DRY_RUN=1 run step_macos
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] defaults write com.apple.dock autohide -bool true"* ]]
+  [[ "$output" == *"[dry-run] defaults write com.apple.dock autohide -bool true"* ]] || false
 }

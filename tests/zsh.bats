@@ -12,11 +12,11 @@ setup() { make_sandbox; }
   ln -s "$REPO_ROOT/zsh/zshrc" "$HOME/.zshrc"
   run zsh -ic 'echo "DOTFILES=$DOTFILES"; alias vim; type mkd; type path_prepend'
   [ "$status" -eq 0 ]
-  [[ "$output" == *"DOTFILES=$REPO_ROOT"* ]]
-  [[ "$output" == *"vim=nvim"* ]]
-  [[ "$output" == *"mkd is a shell function"* ]]
-  [[ "$output" != *"no such file"* ]]
-  [[ "$output" != *"command not found"* ]]
+  [[ "$output" == *"DOTFILES=$REPO_ROOT"* ]] || false
+  [[ "$output" == *"vim=nvim"* ]] || false
+  [[ "$output" == *"mkd is a shell function"* ]] || false
+  [[ "$output" != *"no such file"* ]] || false
+  [[ "$output" != *"command not found"* ]] || false
 }
 
 @test "path_prepend ignores missing directories and duplicates" {

@@ -61,7 +61,7 @@ step_omz() {
 step_version_managers() {
   local status=0 nvm_prefix nvm_sh
   clone_if_missing https://github.com/go-nv/goenv.git "$HOME/.goenv" || status=1
-  run_cmd mkdir -p "$HOME/.nvm"
+  run_cmd mkdir -p "$HOME/.nvm" || status=1
   nvm_prefix="$(brew --prefix nvm 2>/dev/null)"
   nvm_sh="$nvm_prefix/nvm.sh"
   if [ -z "$nvm_prefix" ] || [ ! -s "$nvm_sh" ]; then

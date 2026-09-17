@@ -7,7 +7,8 @@ DOTFILES_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 . "$DOTFILES_ROOT/lib/common.sh"
 
-w() { run_cmd defaults write "$@"; }
+w() { run_cmd defaults write "$@" || status=1; }
+status=0
 
 log_info "Keyboard and text"
 w NSGlobalDomain KeyRepeat -int 2                          # fastest key repeat
@@ -68,3 +69,5 @@ log_info "Restarting Finder, Dock and the menu bar"
 for app in Finder Dock SystemUIServer; do
   run_cmd killall "$app" 2>/dev/null || true
 done
+
+exit "$status"
