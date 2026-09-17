@@ -1,0 +1,104 @@
+# Core packages. Usable by hand: brew bundle --file brew/Brewfile
+# Hardware/audio apps live in Brewfile.extra.
+
+# ---- taps ------------------------------------------------------------------
+# trusted: true — Homebrew >= 6 ignores third-party taps until they are
+# trusted; this trusts each one at Brewfile-parse time.
+tap "anomalyco/tap", trusted: true
+tap "codecrafters-io/tap", trusted: true
+tap "gentleman-programming/tap", trusted: true
+tap "hashicorp/tap", trusted: true
+tap "jakehilborn/jakehilborn", trusted: true
+tap "th-ch/youtube-music", trusted: true
+
+# ---- CLI tools --------------------------------------------------------------
+brew "autojump"          # j <dir>: jump to a directory you visited before
+brew "bat"               # cat with syntax colours
+brew "bats-core"         # test runner for the scripts in this repo
+brew "cloudflared"       # Cloudflare tunnel client
+brew "cmake"
+brew "cookiecutter"      # project templates
+brew "ffmpeg"
+brew "gh"                # GitHub CLI
+brew "git"
+brew "glow"              # Markdown in the terminal
+brew "gnupg"
+brew "golang-migrate"    # database migrations for Go
+brew "golangci-lint"
+brew "helm"
+brew "just"              # command runner
+brew "lsusb"
+brew "lychee"            # link checker
+brew "minikube"
+brew "mycli"             # MySQL client with autocomplete
+brew "neovim"
+brew "nvm"               # Node versions; bootstrap installs the LTS default
+brew "pgcli"             # PostgreSQL client with autocomplete
+brew "pinentry-mac"      # GPG passphrase dialog
+brew "postgresql@15"
+brew "protobuf"
+brew "pyenv"             # Python versions
+brew "pyenv-virtualenv"
+brew "shellcheck"        # shell script linter
+brew "tesseract"         # OCR
+brew "uv"                # Python package manager
+brew "wget"
+brew "worktrunk"         # wt: git worktree manager
+brew "ykman"             # YubiKey manager
+brew "yt-dlp"
+
+# ---- CLI tools from taps ---------------------------------------------------
+brew "anomalyco/tap/opencode"
+brew "codecrafters-io/tap/codecrafters"
+brew "gentleman-programming/tap/engram"
+brew "gentleman-programming/tap/gentle-ai"
+brew "gentleman-programming/tap/gga"
+brew "hashicorp/tap/terraform"                 # no longer in homebrew-core; installs from the hashicorp tap
+brew "jakehilborn/jakehilborn/displayplacer"   # set display layout from the CLI
+
+# ---- fonts -----------------------------------------------------------------
+cask "font-jetbrains-mono"
+cask "font-jetbrains-mono-nerd-font"           # icons for the p10k prompt
+
+# ---- apps ------------------------------------------------------------------
+cask "1password"
+cask "1password-cli"
+cask "balenaetcher"
+cask "betterdisplay"
+cask "browserosaurus"
+cask "calibre"
+cask "chatgpt"
+cask "claude"
+cask "codex"
+cask "copilot-cli"
+cask "discord"
+cask "docker-desktop"
+cask "dropbox"
+cask "firefox"
+cask "google-chrome"
+cask "iterm2"
+cask "jetbrains-toolbox"
+cask "lm-studio"
+cask "logi-options+"
+cask "macwhisper"
+cask "microsoft-office"
+cask "microsoft-teams"
+cask "ngrok"
+cask "obsidian"
+cask "ollama-app"
+cask "onedrive"
+cask "proton-mail"
+cask "proton-mail-bridge"
+cask "protonvpn"
+cask "raspberry-pi-imager"
+cask "raycast"
+cask "setapp"
+cask "slack"
+cask "telegram"
+cask "utm"
+cask "visual-studio-code"
+cask "vlc"
+cask "whatsapp"
+cask "th-ch/youtube-music/youtube-music"       # not an official cask; comes from the th-ch/youtube-music tap
+cask "zed"
+cask "zoom"

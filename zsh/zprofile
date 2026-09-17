@@ -1,0 +1,31 @@
+# ~/.zprofile — login shells only. Managed by the dotfiles repo (symlink).
+
+# Homebrew on Apple Silicon: puts /opt/homebrew/{bin,sbin} on PATH and sets HOMEBREW_PREFIX.
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# add_path_if_dir <dir> — append to PATH only when the directory exists and
+# is not already on PATH.
+add_path_if_dir() {
+  [[ -d "$1" ]] || return 0
+  case ":$PATH:" in *":$1:"*) return 0 ;; esac
+  export PATH="$PATH:$1"
+}
+
+add_path_if_dir "$HOME/.docker/bin"
+add_path_if_dir "$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
+add_path_if_dir "/Applications/Obsidian.app/Contents/MacOS"
+
+# python.org installer for 3.12 (kept from the baseline machine; pyenv shims
+# are added later in .zshrc and take precedence).
+[[ -d /Library/Frameworks/Python.framework/Versions/3.12/bin ]] &&
+  export PATH="/Library/Frameworks/Python.framework/Versions/3.12/bin:$PATH"
+
+# ---- pyenv: shims on PATH ---------------------------------------------------
+# `pyenv init --path` has to run in the login profile, not .zshrc, or pyenv
+# warns "badly configured (missing pyenv shims in $PATH)"; `pyenv init -`
+# (prompt/completions) still lives in zsh/tools.zsh.
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d "$PYENV_ROOT/bin" ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+if command -v pyenv >/dev/null 2>&1; then
+  eval "$(pyenv init --path)"
+fi

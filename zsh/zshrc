@@ -1,0 +1,36 @@
+# ~/.zshrc — interactive shells. Managed by the dotfiles repo (this file is a symlink).
+
+# Powerlevel10k instant prompt. Must stay at the top; anything that prints or
+# asks for input has to be above this block.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Root of the dotfiles repo, found by following the ~/.zshrc symlink.
+# %x = the file being sourced; :A = resolve symlinks; :h:h = go up two directories.
+export DOTFILES="${${(%):-%x}:A:h:h}"
+
+# ---- oh-my-zsh -------------------------------------------------------------
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+ENABLE_CORRECTION="true"
+COMPLETION_WAITING_DOTS="true"
+export UPDATE_ZSH_DAYS=1
+ZSH_DOTENV_PROMPT=false
+plugins=(git docker github httpie macos pip pep8 python pylint pyenv celery brew golang zsh-autosuggestions zsh-syntax-highlighting zsh-completions dotenv kubectl)
+[[ -f "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
+
+# ---- modules ---------------------------------------------------------------
+for _module in path exports tools aliases functions; do
+  source "$DOTFILES/zsh/$_module.zsh"
+done
+unset _module
+
+# Commands starting with a space are not saved in history.
+setopt HIST_IGNORE_SPACE
+
+# Prompt configuration. Run `p10k configure` to regenerate.
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Machine-specific overrides, not in the repo. See zsh/local.zsh.example.
+[[ -f ~/.config/zsh/local.zsh ]] && source ~/.config/zsh/local.zsh

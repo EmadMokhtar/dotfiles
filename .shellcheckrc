@@ -1,0 +1,2 @@
+# Follow `source` lines so lib/*.sh functions are known.
+external-sources=true

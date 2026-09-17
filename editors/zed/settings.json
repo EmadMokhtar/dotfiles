@@ -1,0 +1,96 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "bottom_dock_layout": "full",
+  "edit_predictions": {
+    "provider": "ollama",
+    "mode": "eager"
+  },
+  "cli_default_open_behavior": "existing_window",
+  "ui_font_weight": 400.0,
+  "language_models": {
+    "openai_compatible": {
+      "Ollama Hosted": {
+        "api_url": "https://ollama.emadmokhtar.me",
+        "available_models": [
+          {
+            "name": "minimax-m2.7:cloud",
+            "max_tokens": 200000,
+            "max_output_tokens": 32000,
+            "max_completion_tokens": 200000,
+            "capabilities": {
+              "tools": true,
+              "images": false,
+              "parallel_tool_calls": false,
+              "prompt_cache_key": false,
+              "chat_completions": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "git_panel": {
+    "dock": "right"
+  },
+  "terminal": {
+    "option_as_meta": false,
+    "show_count_badge": true,
+    "font_family": "JetBrainsMono Nerd Font",
+    "button": true
+  },
+  "agent": {
+    "default_profile": "write",
+    "default_model": {
+      "effort": "high",
+      "provider": "copilot_chat",
+      "model": "claude-sonnet-5",
+      "enable_thinking": true
+    },
+    "dock": "right",
+    "inline_assistant_model": {
+      "provider": "copilot_chat",
+      "model": "gpt-5-mini"
+    },
+    "model_parameters": []
+  },
+  "icon_theme": "Material Icon Theme",
+  "context_servers": {
+    "mcp-server-github": {
+      "enabled": true,
+      "settings": {
+      }
+    }
+  },
+  "enable_language_server": true,
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000
+    }
+  },
+  "base_keymap": "JetBrains",
+  "ui_font_family": "Ubuntu",
+  "buffer_font_family": "JetBrains Mono",
+  "ui_font_size": 18.0,
+  "buffer_font_size": 16,
+  "theme": {
+    "mode": "system",
+    "light": "One Dark Pro Monokai Darker",
+    "dark": "One Dark Pro Monokai Darker"
+  }
+}

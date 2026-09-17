@@ -1,0 +1,20 @@
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = false
+[user]
+	signingkey = 00828BE8BE099BF2
+	name = Emad Mokhtar
+	email = me@emadmokhtar.com
+[push]
+	autoSetupRemote = true
+[init]
+	defaultBranch = main
+[core]
+	autocrlf = input
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential

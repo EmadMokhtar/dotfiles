@@ -1190,8 +1190,9 @@ load helpers
 @test "no secret-looking values anywhere in the repo" {
   cd "$REPO_ROOT"
   # Allowed matches: variable names and documentation, never a value.
-  # git grep exits 1 when nothing matches; -I skips binary files.
-  run git grep -nIiE '(github_pat_|ghp_|gho_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-)'
+  # git grep exits 1 when nothing matches; -I skips binary files;
+  # --untracked also scans files not yet committed (ignored files stay excluded).
+  run git grep --untracked -nIiE '(github_pat_|ghp_|gho_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-)'
   [ "$status" -eq 1 ]
   [ -z "$output" ]
 }
@@ -1712,8 +1713,8 @@ setup() {
 @test "--help prints usage and exits 0" {
   run "$REPO_ROOT/bootstrap.sh" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
-  [[ "$output" == *"--dry-run"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
+  [[ "$output" == *"--dry-run"* ]] || false
 }
 
 @test "unknown flag exits 2" {
@@ -1724,7 +1725,7 @@ setup() {
 @test "--dry-run changes nothing in the sandbox home" {
   run "$REPO_ROOT/bootstrap.sh" --dry-run
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run]"* ]]
+  [[ "$output" == *"[dry-run]"* ]] || false
   [ ! -e "$HOME/.zshrc" ]
   [ ! -d "$HOME/.oh-my-zsh" ]
   [ ! -d "$HOME/.dotfiles-backup" ]
@@ -1748,7 +1749,7 @@ setup() {
   : > "$CALL_LOG"
   run "$REPO_ROOT/bootstrap.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"already linked"* ]]
+  [[ "$output" == *"already linked"* ]] || false
   [ "$(calls_matching 'git clone')" -eq 0 ]
   [ "$(ls "$HOME/.dotfiles-backup" | wc -l)" -eq "$backups_before" ]
 }
@@ -1770,8 +1771,8 @@ setup() {
   stub brew 'case "$*" in bundle*) exit 1;; "--prefix nvm") exit 1;; shellenv) echo ":";; esac'
   run "$REPO_ROOT/bootstrap.sh" --no-macos
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Failed steps:"* ]]
-  [[ "$output" == *"Homebrew packages"* ]]
+  [[ "$output" == *"Failed steps:"* ]] || false
+  [[ "$output" == *"Homebrew packages"* ]] || false
   # later steps still ran
   [ -L "$HOME/.zshrc" ]
 }
@@ -2037,7 +2038,7 @@ zsh -lic 'print -l ${(k)functions}' | sort | diff ~/.dotfiles-backup/baseline/fu
 zsh -lic 'env' | cut -d= -f1 | sort | diff ~/.dotfiles-backup/baseline/env-names.txt - ; echo "env diff exit: $?"
 zsh -lic 'print -l ${(s.:.)PATH}' | diff ~/.dotfiles-backup/baseline/path.txt - ; echo "path diff exit: $?"
 ```
-Expected aliases removed (`<` lines): `keyboard_setup`, `standup_list`, `portainer_run`, `zashconfig-nano`, `ohmyzsh`; changed: `flush_dns`, `ovim`. Functions: only `path_prepend`, `path_append`, `add_path_if_dir` added. Env: `DEFAULT_VENV_PY`, `OLLAMA_MODELS`, `OPENAUDIBLE_HOME` gone; `DOTFILES`, `NVM_DIR`, `HOMEBREW_PREFIX/CELLAR/REPOSITORY` added. PATH: `/usr/local/*` and windsurf entries gone; nvm's node bin added; order otherwise the same. Anything else is a bug — fix the module, re-run this step.
+Expected aliases removed (`<` lines): `keyboard_setup`, `standup_list`, `portainer_run`, `zashconfig-nano`, `ohmyzsh`; changed: `flush_dns`, `ovim`. Functions added: `path_prepend`, `path_append`, `add_path_if_dir`, and the `nvm`/`nvm_*` functions that nvm.sh defines (nvm is new on this machine); nothing removed. Env: `DEFAULT_VENV_PY`, `OLLAMA_MODELS`, `OPENAUDIBLE_HOME` gone; `DOTFILES`, `NVM_DIR`, `NVM_BIN`, `NVM_INC`, `NVM_CD_FLAGS`, `HOMEBREW_PREFIX/CELLAR/REPOSITORY` added. PATH: `/usr/local/*` and windsurf entries gone; `~/.nvm/versions/node/<version>/bin` added; order otherwise the same. Anything else is a bug — fix the module, re-run this step.
 
 - [ ] **Step 5: Prompt and tools work**
 
