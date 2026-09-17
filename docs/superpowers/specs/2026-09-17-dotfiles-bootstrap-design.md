@@ -113,8 +113,11 @@ nothing):
      `zsh-users/zsh-completions`, `TamCore/autoupdate-oh-my-zsh-plugins` →
      `~/.oh-my-zsh/custom/plugins/<name>`
    - `romkatv/powerlevel10k` → `~/.oh-my-zsh/custom/themes/powerlevel10k`
-5. **goenv** — `git clone go-nv/goenv` → `~/.goenv` if missing. pyenv comes
-   from Homebrew, including `pyenv-virtualenv`.
+5. **Version managers** — `git clone go-nv/goenv` → `~/.goenv` if missing.
+   pyenv and nvm come from Homebrew (`pyenv-virtualenv` too). For nvm:
+   `mkdir -p ~/.nvm`, source `$(brew --prefix nvm)/nvm.sh`, then if
+   `nvm alias default` is unset run `nvm install --lts` and
+   `nvm alias default 'lts/*'`, so `node` exists in new shells after bootstrap.
 6. **Symlinks** — for each line in `links.txt`: create the parent directory of
    the target; if the target exists and is not already the wanted symlink,
    move it to `~/.dotfiles-backup/<YYYYMMDD-HHMMSS>/<same relative path>`;
@@ -128,7 +131,9 @@ nothing):
 
 Not done on purpose: `chsh` (macOS already defaults to zsh); signing in to
 `gh`, 1Password, App Store; installing Python/Go versions (pyenv/goenv are
-installed, versions are a per-project choice).
+installed, versions are a per-project choice). Node is the exception: one
+default LTS version is installed through nvm because many tools expect a
+`node` on `PATH`.
 
 `links.txt` format: two whitespace-separated columns, `#` comments allowed,
 `~` expanded for the target.
@@ -188,6 +193,10 @@ that checks the directory exists and is not already in `$PATH`:
   `pyenv virtualenv-init -`.
 - goenv: `GOENV_ROOT`, PATH, `goenv init -`, then `$GOROOT/bin` and
   `$GOPATH/bin` on PATH.
+- nvm: `export NVM_DIR="$HOME/.nvm"`, then
+  `source "$(brew --prefix nvm)/nvm.sh"` and
+  `source "$(brew --prefix nvm)/etc/bash_completion.d/nvm"`, each guarded by
+  `[ -s file ]`. Node itself is not installed by Homebrew; nvm owns it.
 - autojump: `source "$(brew --prefix)/etc/profile.d/autojump.sh"`.
 - terraform completion (`bashcompinit` + `complete -C`).
 - Docker CLI completions (`fpath` + `compinit`).
@@ -234,12 +243,13 @@ anomalyco/tap  codecrafters-io/tap  gentleman-programming/tap  jakehilborn/jakeh
 
 Formulae — the current `brew leaves` minus pure libraries (`aom`, `jpeg-xl`,
 `libass`, `librist`, `libsolv`, `portaudio`, `sdl12-compat`, `zlib` — they
-return as dependencies), plus `pyenv`, `pyenv-virtualenv`, `shellcheck` and
-`ykman`:
+return as dependencies) and minus `node` (nvm manages Node instead; nothing
+installed depends on the Homebrew `node`), plus `nvm`, `pyenv`,
+`pyenv-virtualenv`, `shellcheck` and `ykman`:
 
 ```
 autojump bat cloudflared cmake cookiecutter ffmpeg gh git glow gnupg
-golang-migrate golangci-lint helm just lsusb lychee minikube mycli neovim node
+golang-migrate golangci-lint helm just lsusb lychee minikube mycli neovim nvm
 pgcli pinentry-mac postgresql@15 protobuf pyenv pyenv-virtualenv shellcheck
 terraform tesseract uv wget worktrunk ykman yt-dlp
 ```
@@ -340,6 +350,7 @@ changes take effect. Keys that need Full Disk Access (Safari) are not included.
 | Claude Code | `settings.json`, `CLAUDE.md`, `statusline-command.sh`, `hooks/`, `skills/` | Everything else in `~/.claude` (sessions, cache, history, plugin cache, telemetry) excluded. |
 | iTerm2 | `com.googlecode.iterm2.plist` | Exported once from current prefs (`defaults export`). iTerm2 then reads/writes the repo copy. |
 | oh-my-zsh | nothing | Cloned by bootstrap; `custom/` content comes from the clones above. |
+| nvm | nothing | `~/.nvm` holds installed Node versions; created by bootstrap, never in the repo. |
 
 Excluded entirely: `~/.ssh/`, `~/.zsh_history`, `~/.config/gh` (OAuth token),
 `~/.config/raycast` (55 MB binary state; Raycast has its own sync),
