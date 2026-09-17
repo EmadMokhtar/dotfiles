@@ -8,6 +8,9 @@ setup() {
   stub git 'for a in "$@"; do last="$a"; done; mkdir -p "$last"'
   stub defaults 'case "$1" in read) exit 1;; esac'
   stub killall
+  # step_brew_bundle calls sudo -v to keep a sudo session alive across the
+  # bundle run; stub it so tests never prompt for a real password.
+  stub sudo
   export BREW_BIN="$STUB_BIN/brew"
   # bats itself runs without a tty on stdin; step_brew_bundle would otherwise
   # refuse to run.

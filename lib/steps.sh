@@ -36,7 +36,7 @@ step_homebrew() {
 
 # ---- 3. Packages and apps ----------------------------------------------------
 step_brew_bundle() {
-  local status=0
+  local status=0 keepalive=""
 
   # Several casks (docker-desktop, microsoft-office, zoom, ...) call sudo to
   # install. Without a tty sudo cannot ask for a password, and for
@@ -47,12 +47,39 @@ step_brew_bundle() {
     return 1
   fi
 
-  # Homebrew >= 6 ignores third-party taps until they are trusted.
+  if [ "$DRY_RUN" != "1" ]; then
+    # Ask for the password once up front and keep sudo alive for the whole
+    # bundle run, so a cask that needs sudo never fails half-way (Homebrew's
+    # --adopt removes the existing app before installing; a late sudo failure
+    # would leave the app deleted).
+    if ! sudo -v; then
+      log_err "sudo authentication failed"
+      return 1
+    fi
+    # Briefly enable job control so this background job gets its own process
+    # group: without it, `sleep 60` (or `sudo -n true`) shares the caller's
+    # process group, and killing just the subshell's own pid below would
+    # orphan whichever of the two is currently running instead of stopping
+    # it — leaving it alive for up to 60 more seconds.
+    set -m
+    ( while kill -0 "$$" 2>/dev/null; do sudo -n true 2>/dev/null; sleep 60; done ) >/dev/null 2>&1 &
+    keepalive=$!
+    set +m
+  fi
+
+  # Homebrew >= 6 ignores third-party taps until they are trusted. This is a
+  # fallback for whatever the Brewfiles' own `trusted: true` did not cover
+  # (e.g. an older Homebrew bundle DSL). Read taps from both Brewfiles so a
+  # tap that only brew/Brewfile.extra declares still gets trusted.
   if brew trust --help >/dev/null 2>&1; then
     local tap
+    local -a tap_files=("$DOTFILES_ROOT/brew/Brewfile")
+    if [ "$INSTALL_EXTRA" = "1" ]; then
+      tap_files+=("$DOTFILES_ROOT/brew/Brewfile.extra")
+    fi
     while IFS= read -r tap; do
       run_cmd brew trust --taps "$tap" || status=1
-    done < <(grep -E '^tap "' "$DOTFILES_ROOT/brew/Brewfile" | sed -E 's/^tap "([^"]+)".*/\1/')
+    done < <(grep -hE '^tap "' "${tap_files[@]}" | sed -E 's/^tap "([^"]+)".*/\1/')
   fi
 
   # Homebrew >= 6 fetches/verifies cask downloads concurrently, which makes
@@ -61,6 +88,21 @@ step_brew_bundle() {
   run_cmd env HOMEBREW_DOWNLOAD_CONCURRENCY=1 brew bundle --file "$DOTFILES_ROOT/brew/Brewfile" || status=1
   if [ "$INSTALL_EXTRA" = "1" ]; then
     run_cmd env HOMEBREW_DOWNLOAD_CONCURRENCY=1 brew bundle --file "$DOTFILES_ROOT/brew/Brewfile.extra" || status=1
+  fi
+
+  # Single exit path: stop the keep-alive loop (if we started one) on both
+  # the success and the failure path before returning, so no background
+  # process ever outlives this function. Kill the whole process group
+  # (negative pid) so whichever of `sudo -n true` / `sleep 60` is currently
+  # running dies with it, not just the subshell that spawned it. `wait` on a
+  # killed job reports the kill signal (143) as its own exit status; `|| true`
+  # stops that from being mistaken for step_brew_bundle's own result under
+  # errexit callers (bats runs test bodies with `set -e`, and a bare `wait`
+  # failure there would abort the function before it reaches `return
+  # "$status"`).
+  if [ -n "$keepalive" ]; then
+    kill -- "-$keepalive" 2>/dev/null || true
+    wait "$keepalive" 2>/dev/null || true
   fi
   return "$status"
 }
@@ -88,7 +130,11 @@ step_version_managers() {
   nvm_prefix="$(brew --prefix nvm 2>/dev/null)"
   nvm_sh="$nvm_prefix/nvm.sh"
   if [ -z "$nvm_prefix" ] || [ ! -s "$nvm_sh" ]; then
-    log_warn "nvm not installed; skipping default Node"
+    if [ "$DRY_RUN" = "1" ]; then
+      printf '  [dry-run] %s\n' "nvm install --lts && nvm alias default 'lts/*' (after brew installs nvm)"
+    else
+      log_warn "nvm not installed; skipping default Node"
+    fi
     return "$status"
   fi
   if [ -e "$HOME/.nvm/alias/default" ]; then

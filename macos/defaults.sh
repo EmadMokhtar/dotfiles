@@ -66,7 +66,7 @@ w com.apple.menuextra.clock ShowDate -int 0
 w com.apple.ActivityMonitor ShowCategory -int 100          # show all processes
 
 log_info "Restarting Finder, Dock and the menu bar"
-for app in Finder Dock SystemUIServer; do
+for app in Finder Dock SystemUIServer ControlCenter; do
   run_cmd killall "$app" 2>/dev/null || true
 done
 

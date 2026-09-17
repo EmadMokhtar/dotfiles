@@ -54,9 +54,17 @@ setup() {
 
 @test "step_version_managers warns but succeeds when nvm is not installed" {
   stub brew 'exit 1'
-  run step_version_managers
+  DRY_RUN=0 run step_version_managers
   [ "$status" -eq 0 ]
   [[ "$output" == *"nvm not installed"* ]] || false
+}
+
+@test "step_version_managers dry-run prints the nvm install command when nvm is not installed" {
+  stub brew 'exit 1'
+  DRY_RUN=1 run step_version_managers
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[dry-run] nvm install --lts && nvm alias default 'lts/*' (after brew installs nvm)"* ]] || false
+  [[ "$output" != *"nvm not installed"* ]] || false
 }
 
 @test "step_links links the real manifest into the sandbox home" {

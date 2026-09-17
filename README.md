@@ -3,6 +3,8 @@
 My macOS setup: shell, tools, apps, preferences and app configs. One command
 takes a blank Mac to this setup.
 
+Apple Silicon only (`/opt/homebrew`).
+
 ## Install
 
 ```bash
@@ -13,8 +15,10 @@ cd ~/Projects/dotfiles
 
 Run it from Terminal, not from a script or an automation: several casks
 (Docker Desktop, Microsoft Office, Zoom, …) install with `sudo` and must be
-able to ask for your password. Without a terminal the Homebrew step is
-skipped.
+able to ask for your password. Without a terminal, the "Homebrew packages"
+step (`brew bundle`) is reported as failed (exit 1) and skipped — Homebrew
+itself, installed by the earlier "Homebrew" step, is unaffected and stays
+installed.
 
 Then open a new terminal window. Sign in to `gh` (`gh auth login`), 1Password
 and the App Store yourself; the script does not handle logins.
@@ -29,7 +33,9 @@ and the App Store yourself; the script does not handle logins.
 | `--no-macos` | Skip `macos/defaults.sh`. |
 
 The script is safe to run again at any time: existing files are moved to
-`~/.dotfiles-backup/<timestamp>/`, never deleted, and already-done steps are skipped.
+`~/.dotfiles-backup/<timestamp>/`, never deleted, and already-done steps are
+skipped. `brew bundle` also upgrades any outdated package on every run, so
+re-running keeps everything in the Brewfile current.
 
 ## What is where
 
@@ -42,6 +48,9 @@ The script is safe to run again at any time: existing files are moved to
 | `editors/zed/` | Zed `settings.json` |
 | `claude/` | Claude Code settings, `CLAUDE.md`, hooks, skills, status line |
 | `iterm2/` | iTerm2 preferences (iTerm2 reads and writes this file directly) |
+| `lib/` | Bootstrap helpers (`common.sh`, `link.sh`, `steps.sh`) sourced by `bootstrap.sh` |
+| `tests/` | bats tests for the bootstrap scripts |
+| `docs/` | Design spec and plan this bootstrap was built from |
 | `links.txt` | Which repo file is symlinked where |
 
 ## Machine-specific values
@@ -53,8 +62,8 @@ sourced last and never committed.
 
 Kerlig, TinkerTool, XP-Pen driver, Neural DSP, Hermes Agent, Zima, CubeSuite,
 Cubase (via Steinberg Download Assistant), AmpliTube/TONEX (via IK Product
-Manager). App Store: Keynote, Pages, Numbers, GarageBand, Noir, Wipr, PiPer,
-SimpleLogin.
+Manager), Blackmagic Disk Speed Test. App Store: Keynote, Pages, Numbers,
+GarageBand, Noir, Wipr, PiPer, SimpleLogin.
 
 ## Development
 
@@ -86,3 +95,6 @@ Tests run in a temporary `HOME` with fake `brew`, `git`, `defaults` and
   `HOMEBREW_DOWNLOAD_CONCURRENCY=1` to avoid `hdiutil: Resource busy`
   failures. If a cask still fails, run `brew install --cask --adopt <name>`
   for it.
+- iTerm2 rewrites `iterm2/com.googlecode.iterm2.plist` on quit. Review its
+  diff before committing — it can carry machine-specific state you did not
+  mean to check in.

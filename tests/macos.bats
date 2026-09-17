@@ -13,6 +13,9 @@ setup() {
   [[ "$output" == *"[dry-run] defaults write NSGlobalDomain KeyRepeat -int 2"* ]] || false
   [[ "$output" == *"[dry-run] defaults write com.apple.finder AppleShowAllFiles -bool true"* ]] || false
   [[ "$output" == *"[dry-run] killall Dock"* ]] || false
+  # ControlCenter owns the menu-bar clock on recent macOS and must be
+  # restarted too, alongside Finder, Dock and SystemUIServer.
+  [[ "$output" == *"[dry-run] killall ControlCenter"* ]] || false
   [ "$(calls_matching 'defaults')" -eq 0 ]
 }
 
@@ -23,6 +26,8 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$(calls_matching 'defaults write com.apple.dock tilesize -int 48')" -eq 1 ]
   [ "$(calls_matching 'killall Finder')" -eq 1 ]
+  [ "$(calls_matching 'killall ControlCenter')" -eq 1 ]
+  [ "$(calls_matching 'killall')" -eq 4 ]
 }
 
 @test "defaults.sh returns 1 when defaults write fails" {

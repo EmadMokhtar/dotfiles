@@ -1,11 +1,15 @@
-# Core packages. Install with: brew bundle --file brew/Brewfile
+# Core packages. Usable by hand: brew bundle --file brew/Brewfile
 # Hardware/audio apps live in Brewfile.extra.
 
 # ---- taps ------------------------------------------------------------------
-tap "anomalyco/tap"
-tap "codecrafters-io/tap"
-tap "gentleman-programming/tap"
-tap "jakehilborn/jakehilborn"
+# trusted: true — Homebrew >= 6 ignores third-party taps until they are
+# trusted; this trusts each one at Brewfile-parse time.
+tap "anomalyco/tap", trusted: true
+tap "codecrafters-io/tap", trusted: true
+tap "gentleman-programming/tap", trusted: true
+tap "hashicorp/tap", trusted: true
+tap "jakehilborn/jakehilborn", trusted: true
+tap "th-ch/youtube-music", trusted: true
 
 # ---- CLI tools --------------------------------------------------------------
 brew "autojump"          # j <dir>: jump to a directory you visited before
@@ -36,7 +40,6 @@ brew "protobuf"
 brew "pyenv"             # Python versions
 brew "pyenv-virtualenv"
 brew "shellcheck"        # shell script linter
-brew "terraform"
 brew "tesseract"         # OCR
 brew "uv"                # Python package manager
 brew "wget"
@@ -50,6 +53,7 @@ brew "codecrafters-io/tap/codecrafters"
 brew "gentleman-programming/tap/engram"
 brew "gentleman-programming/tap/gentle-ai"
 brew "gentleman-programming/tap/gga"
+brew "hashicorp/tap/terraform"                 # no longer in homebrew-core; installs from the hashicorp tap
 brew "jakehilborn/jakehilborn/displayplacer"   # set display layout from the CLI
 
 # ---- fonts -----------------------------------------------------------------
@@ -95,6 +99,6 @@ cask "utm"
 cask "visual-studio-code"
 cask "vlc"
 cask "whatsapp"
-cask "youtube-music"
+cask "th-ch/youtube-music/youtube-music"       # not an official cask; comes from the th-ch/youtube-music tap
 cask "zed"
 cask "zoom"
