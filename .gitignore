@@ -2,3 +2,4 @@ zsh/local.zsh
 *.local
 .DS_Store
 iterm2/*.plist.bak
+.superpowers/

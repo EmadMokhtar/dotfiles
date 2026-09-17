@@ -1190,8 +1190,9 @@ load helpers
 @test "no secret-looking values anywhere in the repo" {
   cd "$REPO_ROOT"
   # Allowed matches: variable names and documentation, never a value.
-  # git grep exits 1 when nothing matches; -I skips binary files.
-  run git grep -nIiE '(github_pat_|ghp_|gho_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-)'
+  # git grep exits 1 when nothing matches; -I skips binary files;
+  # --untracked also scans files not yet committed (ignored files stay excluded).
+  run git grep --untracked -nIiE '(github_pat_|ghp_|gho_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-)'
   [ "$status" -eq 1 ]
   [ -z "$output" ]
 }
@@ -2037,7 +2038,7 @@ zsh -lic 'print -l ${(k)functions}' | sort | diff ~/.dotfiles-backup/baseline/fu
 zsh -lic 'env' | cut -d= -f1 | sort | diff ~/.dotfiles-backup/baseline/env-names.txt - ; echo "env diff exit: $?"
 zsh -lic 'print -l ${(s.:.)PATH}' | diff ~/.dotfiles-backup/baseline/path.txt - ; echo "path diff exit: $?"
 ```
-Expected aliases removed (`<` lines): `keyboard_setup`, `standup_list`, `portainer_run`, `zashconfig-nano`, `ohmyzsh`; changed: `flush_dns`, `ovim`. Functions: only `path_prepend`, `path_append`, `add_path_if_dir` added. Env: `DEFAULT_VENV_PY`, `OLLAMA_MODELS`, `OPENAUDIBLE_HOME` gone; `DOTFILES`, `NVM_DIR`, `HOMEBREW_PREFIX/CELLAR/REPOSITORY` added. PATH: `/usr/local/*` and windsurf entries gone; nvm's node bin added; order otherwise the same. Anything else is a bug — fix the module, re-run this step.
+Expected aliases removed (`<` lines): `keyboard_setup`, `standup_list`, `portainer_run`, `zashconfig-nano`, `ohmyzsh`; changed: `flush_dns`, `ovim`. Functions added: `path_prepend`, `path_append`, `add_path_if_dir`, and the `nvm`/`nvm_*` functions that nvm.sh defines (nvm is new on this machine); nothing removed. Env: `DEFAULT_VENV_PY`, `OLLAMA_MODELS`, `OPENAUDIBLE_HOME` gone; `DOTFILES`, `NVM_DIR`, `NVM_BIN`, `NVM_INC`, `NVM_CD_FLAGS`, `HOMEBREW_PREFIX/CELLAR/REPOSITORY` added. PATH: `/usr/local/*` and windsurf entries gone; `~/.nvm/versions/node/<version>/bin` added; order otherwise the same. Anything else is a bug — fix the module, re-run this step.
 
 - [ ] **Step 5: Prompt and tools work**
 
