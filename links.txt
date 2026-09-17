@@ -1,0 +1,12 @@
+# <path in repo>              <symlink to create>
+zsh/zshrc                     ~/.zshrc
+zsh/zprofile                  ~/.zprofile
+zsh/p10k.zsh                  ~/.p10k.zsh
+git/gitconfig                 ~/.gitconfig
+git/ignore                    ~/.config/git/ignore
+editors/zed/settings.json     ~/.config/zed/settings.json
+claude/settings.json          ~/.claude/settings.json
+claude/CLAUDE.md              ~/.claude/CLAUDE.md
+claude/statusline-command.sh  ~/.claude/statusline-command.sh
+claude/hooks                  ~/.claude/hooks
+claude/skills                 ~/.claude/skills
