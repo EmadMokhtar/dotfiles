@@ -22,12 +22,12 @@ link_file() {
     rel="${dst#"$HOME"/}"
     rel="${rel#/}"
     backup="$BACKUP_DIR/$rel"
-    run_cmd mkdir -p "$(dirname "$backup")"
-    run_cmd mv "$dst" "$backup"
+    run_cmd mkdir -p "$(dirname "$backup")" || return 1
+    run_cmd mv "$dst" "$backup" || return 1
     log_ok "backed up $dst -> $backup"
   fi
-  run_cmd mkdir -p "$(dirname "$dst")"
-  run_cmd ln -s "$src" "$dst"
+  run_cmd mkdir -p "$(dirname "$dst")" || return 1
+  run_cmd ln -s "$src" "$dst" || return 1
   log_ok "linked $dst -> $src"
 }
 
@@ -36,7 +36,7 @@ link_file() {
 # and blank lines are ignored. Returns 1 if any entry failed.
 link_manifest() {
   local manifest="$1" root="$2" src dst status=0
-  while read -r src dst; do
+  while read -r src dst || [ -n "$src" ]; do
     case "$src" in ''|'#'*) continue ;; esac
     link_file "$root/$src" "$(expand_tilde "$dst")" || status=1
   done < "$manifest"

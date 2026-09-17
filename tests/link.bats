@@ -84,3 +84,15 @@ EOF
   [ "$status" -eq 1 ]
   [ -L "$HOME/.zshrc" ]
 }
+
+@test "link_manifest handles file without trailing newline" {
+  printf 'zsh/zshrc ~/.zshrc' > "$BATS_TEST_TMPDIR/links.txt"
+  link_manifest "$BATS_TEST_TMPDIR/links.txt" "$SRC"
+  [ "$(readlink "$HOME/.zshrc")" = "$SRC/zsh/zshrc" ]
+}
+
+@test "link_file fails when parent directory is a regular file" {
+  touch "$HOME/.config"
+  run link_file "$SRC/zsh/zshrc" "$HOME/.config/x/zshrc"
+  [ "$status" -eq 1 ]
+}
