@@ -40,7 +40,11 @@ command -v terraform >/dev/null 2>&1 && complete -o nospace -C "$(command -v ter
 command -v wt >/dev/null 2>&1 && eval "$(command wt config shell init zsh)"
 
 # ---- GitHub token for the Claude Code github MCP plugin --------------------
-# Read from gh's keychain at shell start; nothing is written to disk.
-command -v gh >/dev/null 2>&1 && export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
+# The plugin reads ${GITHUB_PERSONAL_ACCESS_TOKEN}. The token is read from
+# gh's keychain only when `claude` starts and is passed to that process
+# alone, so other programs started from the shell never see it.
+if command -v gh >/dev/null 2>&1; then
+  claude() { GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)" command claude "$@"; }
+fi
 
 unset _brew_prefix

@@ -7,3 +7,6 @@
 
 # OpenAudible library on an external drive
 # export OPENAUDIBLE_HOME="/Volumes/External/OpenAudible"
+
+# Ollama reachable from other devices on the network (no authentication!)
+# export OLLAMA_HOST="0.0.0.0"

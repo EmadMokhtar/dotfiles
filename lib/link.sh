@@ -9,7 +9,11 @@ BACKUP_DIR="${BACKUP_DIR:-$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)}"
 # An existing <target> (file, directory or other symlink) is moved into
 # BACKUP_DIR first. Nothing is ever deleted.
 link_file() {
-  local src="$1" dst="$2" rel backup
+  local src="$1" dst="$2" rel backup verb_backup="backed up" verb_link="linked"
+  if [ "$DRY_RUN" = "1" ]; then
+    verb_backup="would back up"
+    verb_link="would link"
+  fi
   if [ ! -e "$src" ]; then
     log_err "source missing: $src"
     return 1
@@ -24,11 +28,11 @@ link_file() {
     backup="$BACKUP_DIR/$rel"
     run_cmd mkdir -p "$(dirname "$backup")" || return 1
     run_cmd mv "$dst" "$backup" || return 1
-    log_ok "backed up $dst -> $backup"
+    log_ok "$verb_backup $dst -> $backup"
   fi
   run_cmd mkdir -p "$(dirname "$dst")" || return 1
   run_cmd ln -s "$src" "$dst" || return 1
-  log_ok "linked $dst -> $src"
+  log_ok "$verb_link $dst -> $src"
 }
 
 # link_manifest <manifest> <root> — link every "<src> <dst>" line.
