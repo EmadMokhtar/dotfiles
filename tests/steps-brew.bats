@@ -3,6 +3,10 @@ load helpers
 setup() {
   make_sandbox
   export DOTFILES_ROOT="$REPO_ROOT"
+  # bats itself runs tests without a tty; disable the tty requirement here so
+  # the other step_brew_bundle tests below keep working. The tests that
+  # exercise the requirement explicitly re-enable it.
+  export BOOTSTRAP_REQUIRE_TTY=0
   . "$REPO_ROOT/lib/common.sh"
   . "$REPO_ROOT/lib/link.sh"
   . "$REPO_ROOT/lib/steps.sh"
@@ -37,10 +41,22 @@ setup() {
 }
 
 @test "step_brew_bundle installs the core Brewfile only by default" {
-  stub brew
+  stub brew 'echo "conc=$HOMEBREW_DOWNLOAD_CONCURRENCY" >> "$CALL_LOG"'
   step_brew_bundle
   [ "$(calls_matching "brew bundle --file $REPO_ROOT/brew/Brewfile$")" -eq 1 ]
   [ "$(calls_matching 'Brewfile.extra')" -eq 0 ]
+  [ "$(calls_matching 'conc=1')" -eq 1 ]
+}
+
+@test "step_brew_bundle trusts every tap in the Brewfile before bundling" {
+  stub brew
+  step_brew_bundle
+  [ "$(calls_matching 'brew trust --taps anomalyco/tap')" -eq 1 ]
+  [ "$(calls_matching 'brew trust --taps')" -eq 4 ]
+  local trust_line bundle_line
+  trust_line="$(grep -n 'brew trust --taps' "$CALL_LOG" | head -n1 | cut -d: -f1)"
+  bundle_line="$(grep -n 'brew bundle --file' "$CALL_LOG" | head -n1 | cut -d: -f1)"
+  [ "$trust_line" -lt "$bundle_line" ] || false
 }
 
 @test "step_brew_bundle also installs Brewfile.extra when INSTALL_EXTRA=1" {
@@ -53,4 +69,19 @@ setup() {
   stub brew 'exit 1'
   run step_brew_bundle
   [ "$status" -eq 1 ]
+}
+
+@test "step_brew_bundle without a tty warns and skips bundle" {
+  stub brew
+  BOOTSTRAP_REQUIRE_TTY=1 run step_brew_bundle < /dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"terminal"* ]] || false
+  [ "$(calls_matching 'brew bundle')" -eq 0 ]
+}
+
+@test "step_brew_bundle dry-run keeps working without a tty" {
+  stub brew
+  BOOTSTRAP_REQUIRE_TTY=1 DRY_RUN=1 run step_brew_bundle < /dev/null
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[dry-run] env HOMEBREW_DOWNLOAD_CONCURRENCY=1 brew bundle"* ]] || false
 }

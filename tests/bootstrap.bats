@@ -9,6 +9,9 @@ setup() {
   stub defaults 'case "$1" in read) exit 1;; esac'
   stub killall
   export BREW_BIN="$STUB_BIN/brew"
+  # bats itself runs without a tty on stdin; step_brew_bundle would otherwise
+  # refuse to run.
+  export BOOTSTRAP_REQUIRE_TTY=0
 }
 
 @test "--help prints usage and exits 0" {

@@ -11,6 +11,11 @@ cd ~/Projects/dotfiles
 ./bootstrap.sh
 ```
 
+Run it from Terminal, not from a script or an automation: several casks
+(Docker Desktop, Microsoft Office, Zoom, …) install with `sudo` and must be
+able to ask for your password. Without a terminal the Homebrew step is
+skipped.
+
 Then open a new terminal window. Sign in to `gh` (`gh auth login`), 1Password
 and the App Store yourself; the script does not handle logins.
 
@@ -77,3 +82,7 @@ Tests run in a temporary `HOME` with fake `brew`, `git`, `defaults` and
   symlink with a plain file. Re-run `./bootstrap.sh --no-brew --no-macos` to
   re-link; the app's copy lands in `~/.dotfiles-backup/` for you to diff.
 - `macos/defaults.sh` needs a log out / log in for keyboard and trackpad keys.
+- Homebrew 6 installs casks concurrently; the bootstrap sets
+  `HOMEBREW_DOWNLOAD_CONCURRENCY=1` to avoid `hdiutil: Resource busy`
+  failures. If a cask still fails, run `brew install --cask --adopt <name>`
+  for it.

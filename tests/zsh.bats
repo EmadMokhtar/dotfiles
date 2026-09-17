@@ -38,4 +38,8 @@ setup() { make_sandbox; }
 @test "zprofile only adds directories that exist" {
   run zsh -c "PATH=/usr/bin; source '$REPO_ROOT/zsh/zprofile'; echo \$PATH"
   [[ "$output" != *"Toolbox/scripts"* ]] || [ -d "$HOME/Library/Application Support/JetBrains/Toolbox/scripts" ]
+
+  mkdir -p "$HOME/.docker/bin"
+  run zsh -c "PATH=/usr/bin:$HOME/.docker/bin; source '$REPO_ROOT/zsh/zprofile'; print -l \${(s.:.)PATH}"
+  [ "$(printf '%s\n' "$output" | grep -c '\.docker/bin$')" -eq 1 ]
 }

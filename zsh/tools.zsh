@@ -3,10 +3,10 @@
 _brew_prefix="${HOMEBREW_PREFIX:-/opt/homebrew}"
 
 # ---- pyenv: Python versions and virtualenvs --------------------------------
+# PYENV_ROOT and the shims on PATH are set in zsh/zprofile (login profile);
+# only the interactive prompt/completions hooks are set up here.
 export PYENV_ROOT="$HOME/.pyenv"
-path_prepend "$PYENV_ROOT/bin"
 if command -v pyenv >/dev/null 2>&1; then
-  eval "$(pyenv init --path)"
   eval "$(pyenv init -)"
   if pyenv commands 2>/dev/null | grep -qx virtualenv-init; then
     eval "$(pyenv virtualenv-init -)"

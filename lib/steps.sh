@@ -6,6 +6,8 @@
 BREW_BIN="${BREW_BIN:-/opt/homebrew/bin/brew}"
 INSTALL_EXTRA="${INSTALL_EXTRA:-0}"
 HOMEBREW_INSTALLER="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+# Set to 0 in tests: bats itself runs without a tty on stdin.
+BOOTSTRAP_REQUIRE_TTY="${BOOTSTRAP_REQUIRE_TTY:-1}"
 
 # ---- 1. Xcode Command Line Tools (compilers and git needed by Homebrew) -----
 step_xcode() {
@@ -35,9 +37,30 @@ step_homebrew() {
 # ---- 3. Packages and apps ----------------------------------------------------
 step_brew_bundle() {
   local status=0
-  run_cmd brew bundle --file "$DOTFILES_ROOT/brew/Brewfile" || status=1
+
+  # Several casks (docker-desktop, microsoft-office, zoom, ...) call sudo to
+  # install. Without a tty sudo cannot ask for a password, and for
+  # docker-desktop specifically Homebrew had already removed the existing
+  # app (--adopt) before sudo failed, destroying it. Refuse to run instead.
+  if [ "$BOOTSTRAP_REQUIRE_TTY" = "1" ] && [ "$DRY_RUN" != "1" ] && [ ! -t 0 ]; then
+    log_warn "brew bundle skipped: some casks need sudo and a terminal to ask for your password. Run ./bootstrap.sh from Terminal."
+    return 1
+  fi
+
+  # Homebrew >= 6 ignores third-party taps until they are trusted.
+  if brew trust --help >/dev/null 2>&1; then
+    local tap
+    while IFS= read -r tap; do
+      run_cmd brew trust --taps "$tap" || status=1
+    done < <(grep -E '^tap "' "$DOTFILES_ROOT/brew/Brewfile" | sed -E 's/^tap "([^"]+)".*/\1/')
+  fi
+
+  # Homebrew >= 6 fetches/verifies cask downloads concurrently, which makes
+  # concurrent DMG mounts collide ("hdiutil: attach failed - Resource busy").
+  # Serialise downloads so casks do not race each other.
+  run_cmd env HOMEBREW_DOWNLOAD_CONCURRENCY=1 brew bundle --file "$DOTFILES_ROOT/brew/Brewfile" || status=1
   if [ "$INSTALL_EXTRA" = "1" ]; then
-    run_cmd brew bundle --file "$DOTFILES_ROOT/brew/Brewfile.extra" || status=1
+    run_cmd env HOMEBREW_DOWNLOAD_CONCURRENCY=1 brew bundle --file "$DOTFILES_ROOT/brew/Brewfile.extra" || status=1
   fi
   return "$status"
 }
