@@ -1713,8 +1713,8 @@ setup() {
 @test "--help prints usage and exits 0" {
   run "$REPO_ROOT/bootstrap.sh" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
-  [[ "$output" == *"--dry-run"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
+  [[ "$output" == *"--dry-run"* ]] || false
 }
 
 @test "unknown flag exits 2" {
@@ -1725,7 +1725,7 @@ setup() {
 @test "--dry-run changes nothing in the sandbox home" {
   run "$REPO_ROOT/bootstrap.sh" --dry-run
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run]"* ]]
+  [[ "$output" == *"[dry-run]"* ]] || false
   [ ! -e "$HOME/.zshrc" ]
   [ ! -d "$HOME/.oh-my-zsh" ]
   [ ! -d "$HOME/.dotfiles-backup" ]
@@ -1749,7 +1749,7 @@ setup() {
   : > "$CALL_LOG"
   run "$REPO_ROOT/bootstrap.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"already linked"* ]]
+  [[ "$output" == *"already linked"* ]] || false
   [ "$(calls_matching 'git clone')" -eq 0 ]
   [ "$(ls "$HOME/.dotfiles-backup" | wc -l)" -eq "$backups_before" ]
 }
@@ -1771,8 +1771,8 @@ setup() {
   stub brew 'case "$*" in bundle*) exit 1;; "--prefix nvm") exit 1;; shellenv) echo ":";; esac'
   run "$REPO_ROOT/bootstrap.sh" --no-macos
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Failed steps:"* ]]
-  [[ "$output" == *"Homebrew packages"* ]]
+  [[ "$output" == *"Failed steps:"* ]] || false
+  [[ "$output" == *"Homebrew packages"* ]] || false
   # later steps still ran
   [ -L "$HOME/.zshrc" ]
 }
