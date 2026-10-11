@@ -119,3 +119,144 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"not owned by you"* ]] || false
 }
+
+# ---- secret run ---------------------------------------------------------------
+
+# A map with one secret of each source type.
+three_sources_map() {
+  write_map <<'MAPEOF'
+KC_ONE     keychain
+OP_ONE     op://Vault/Item/field
+CMD_ONE    cmd:printf cmd-value-789
+MAPEOF
+}
+
+@test "run injects values from the keychain, 1Password and a command" {
+  three_sources_map
+  run "$SECRET" run KC_ONE OP_ONE CMD_ONE -- sh -c 'printf "%s|%s|%s" "$KC_ONE" "$OP_ONE" "$CMD_ONE"'
+  [ "$status" -eq 0 ]
+  [ "$output" = "kc-value-123|op-value-456|cmd-value-789" ]
+  [ "$(calls_matching 'security find-generic-password -a KC_ONE -s dotfiles-secrets -w$')" -eq 1 ]
+  [ "$(calls_matching 'op read --no-newline op://Vault/Item/field$')" -eq 1 ]
+}
+
+@test "run does not leak a value into the arguments of another command" {
+  three_sources_map
+  run "$SECRET" run KC_ONE OP_ONE -- true
+  [ "$status" -eq 0 ]
+  [ "$(calls_matching 'kc-value-123')" -eq 0 ]
+  [ "$(calls_matching 'op-value-456')" -eq 0 ]
+}
+
+@test "run keeps spaces, quotes, dollar signs and equals signs in a value" {
+  printf '%s' 'a b$c"d'\''e=f  g' > "$HOME/special.txt"
+  write_map <<EOF
+SPECIAL    cmd:cat $HOME/special.txt
+EOF
+  run "$SECRET" run SPECIAL -- sh -c 'printf "%s" "$SPECIAL"'
+  [ "$status" -eq 0 ]
+  [ "$output" = 'a b$c"d'\''e=f  g' ]
+}
+
+@test "run passes the program's arguments through unchanged" {
+  three_sources_map
+  run "$SECRET" run KC_ONE -- sh -c 'printf "%s|%s" "$1" "$2"' _ "a b" "c  d"
+  [ "$status" -eq 0 ]
+  [ "$output" = "a b|c  d" ]
+}
+
+@test "run passes the exit code of the program through" {
+  three_sources_map
+  run "$SECRET" run KC_ONE -- sh -c 'exit 7'
+  [ "$status" -eq 7 ]
+}
+
+@test "run needs --, a name and a command" {
+  three_sources_map
+  run "$SECRET" run KC_ONE true
+  [ "$status" -eq 2 ]
+  run "$SECRET" run -- true
+  [ "$status" -eq 2 ]
+  run "$SECRET" run KC_ONE --
+  [ "$status" -eq 2 ]
+  run "$SECRET" run --bogus KC_ONE -- true
+  [ "$status" -eq 2 ]
+}
+
+@test "run fails closed on a name that is not in the map" {
+  three_sources_map
+  run "$SECRET" run KC_ONE NOPE -- touch "$HOME/ran"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot resolve NOPE: not in the map"* ]] || false
+  [ ! -e "$HOME/ran" ]
+}
+
+@test "run fails closed when one source fails and does not start the program" {
+  three_sources_map
+  stub op 'echo "not signed in" >&2; exit 1'
+  run "$SECRET" run KC_ONE OP_ONE -- touch "$HOME/ran"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot resolve OP_ONE"* ]] || false
+  [[ "$output" == *"not signed in"* ]] || false
+  [ ! -e "$HOME/ran" ]
+}
+
+@test "run treats an empty value as a failure" {
+  three_sources_map
+  stub security 'exit 0'
+  run "$SECRET" run KC_ONE -- touch "$HOME/ran"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot resolve KC_ONE: the value is empty"* ]] || false
+  [ ! -e "$HOME/ran" ]
+}
+
+@test "run --optional warns, skips the failed secret and still runs" {
+  three_sources_map
+  stub op 'exit 1'
+  run "$SECRET" run --optional KC_ONE OP_ONE -- sh -c 'printf "%s|%s" "$KC_ONE" "${OP_ONE-unset}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning: OP_ONE:"* ]] || false
+  [[ "$output" == *"kc-value-123|unset"* ]] || false
+}
+
+@test "run reports a missing 1Password CLI" {
+  three_sources_map
+  rm "$STUB_BIN/op"
+  PATH="$STUB_BIN:/usr/bin:/bin" run "$SECRET" run OP_ONE -- true
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"the 1Password CLI (op) is not installed"* ]] || false
+}
+
+@test "run without --optional stops when the map is missing" {
+  run "$SECRET" run KC_ONE -- touch "$HOME/ran"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no map at $MAP"* ]] || false
+  [ ! -e "$HOME/ran" ]
+}
+
+@test "run --optional starts the program, without secrets, when the map is missing" {
+  run "$SECRET" run --optional KC_ONE -- sh -c 'printf "started|%s" "${KC_ONE-unset}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no map at $MAP"* ]] || false
+  [[ "$output" == *"continuing without secrets"* ]] || false
+  [[ "$output" == *"started|unset"* ]] || false
+}
+
+@test "run --optional starts the program, without secrets, when the map is unsafe or broken" {
+  write_map <<'EOF'
+KC_ONE     keychain
+EOF
+  chmod 664 "$MAP"
+  run "$SECRET" run --optional KC_ONE -- sh -c 'printf "started|%s" "${KC_ONE-unset}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"continuing without secrets"* ]] || false
+  [[ "$output" == *"started|unset"* ]] || false
+
+  write_map <<'EOF'
+KC_ONE     vault
+EOF
+  run "$SECRET" run --optional KC_ONE -- sh -c 'printf "started|%s" "${KC_ONE-unset}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"continuing without secrets"* ]] || false
+  [[ "$output" == *"started|unset"* ]] || false
+}
