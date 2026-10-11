@@ -23,7 +23,8 @@ It works for command-line programs (`secret run`) and for macOS GUI apps
 Non-goals:
 
 - Protection from malware that runs as your user (see §9).
-- Linux support.
+- Linux in this phase. macOS comes first; Linux is the next phase (see §6,
+  "Platform layer and Linux").
 - Setting variables for every shell or for the whole GUI session (see §10).
 
 ## 2. Decisions
@@ -38,6 +39,7 @@ Non-goals:
 | GUI apps | `secret open <App>`, which starts the app with its secrets. No `launchctl setenv` session mode. |
 | Missing secret | Fail closed: the command or app does not start. `--optional` turns this into a warning. |
 | Existing code | The `claude()` wrapper in `zsh/tools.zsh` is migrated to `secret run`. |
+| Platforms | macOS now, Linux next. OS-specific code sits in a few functions, so Linux adds a backend and not a rewrite (§6). |
 
 ## 3. Files
 
@@ -180,6 +182,39 @@ An empty value counts as a failure for every source. Standard error of the
 source command is passed through, because it explains the failure ("not signed
 in", "item not found").
 
+### Platform layer and Linux
+
+`bin/secret` is written for bash 3.2, the version macOS ships: no associative
+arrays and no `mapfile`.
+
+Everything that depends on the operating system is in five functions. A
+`case "$(uname -s)"` picks the implementation:
+
+| Function | macOS (this phase) | Linux (next phase) |
+|---|---|---|
+| `os_store_get NAME` | `security find-generic-password … -w` | `secret-tool lookup service dotfiles-secrets account NAME` |
+| `os_store_set NAME` | `security add-generic-password -U … -w` (it prompts) | hidden prompt with `read -s`, then `secret-tool store` with the value on standard input |
+| `os_file_owner_mode PATH` | `stat -f '%u %Lp'` | `stat -c '%u %a'` |
+| `os_app_executable APP` | `.app` bundle and `plutil` | the `Exec=` line of a `.desktop` file in `~/.local/share/applications` or `/usr/share/applications` |
+| `os_app_running APP` | `pgrep -f` on the bundle path | `pgrep -f` on the executable path |
+
+`secret-tool` is the libsecret command-line client. libsecret talks to the Secret
+Service API (the desktop keyring, for example GNOME Keyring or KWallet).
+
+The rest is the same on both systems: map parsing, `op read`, `cmd:`, `run`,
+`list`, and the rules in §7.
+
+In this phase, any OS other than Darwin stops with `unsupported OS: <name>
+(macOS only for now)` and exit code `1`.
+
+Linux notes for the next phase:
+
+- A headless machine has no desktop keyring. There the `keychain` source will not
+  work, but `op://` and `cmd:` will. The Linux phase decides how to handle this.
+- The rest of the repo (`bootstrap.sh`, Homebrew, `defaults`) is still macOS-only.
+  Making `bin/secret` work on Linux does not make bootstrap work on Linux. That is
+  a separate project.
+
 ## 7. Value handling rules
 
 - A value lives only in a shell variable inside the subshell that runs the
@@ -291,7 +326,9 @@ Test values are fake strings.
 - `open`: starts the fake app with the right variables; unknown app; bundle not
   found; app already running (`pgrep` stub) refuses.
 - `list`: names and types only.
-- `bin/secret` passes `shellcheck`.
+- Unsupported OS: with a `uname` stub that prints `Linux`, every command stops
+  with the "macOS only for now" error and exit code `1`.
+- `bin/secret` passes `shellcheck`, and runs under bash 3.2 (`/bin/bash` on macOS).
 
 `tests/steps-config.bats`: `step_secrets_map` seeds a missing map with modes 700
 and 600; does not overwrite an existing map; makes no change under `--dry-run`.
@@ -327,3 +364,7 @@ Manual acceptance (once, after implementation):
   same user can read it with `ps`.
 - **launchd**: the macOS process that starts all other processes, including GUI
   apps. It does not read your shell startup files.
+- **libsecret / Secret Service**: the Linux standard for storing secrets in the
+  desktop keyring. `secret-tool` is its command-line client.
+- **`.desktop` file**: a Linux text file that describes how to start a GUI app.
+  It is the Linux counterpart of a macOS `.app` bundle.
