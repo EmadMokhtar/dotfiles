@@ -332,3 +332,119 @@ EOF
   [ "$status" -eq 2 ]
   [ "$(calls_matching 'add-generic-password')" -eq 0 ]
 }
+
+# ---- secret open ------------------------------------------------------------------
+
+# wait_for_file <path> — wait up to 5 seconds for a non-empty file.
+wait_for_file() {
+  local i
+  for i in $(seq 50); do
+    [ -s "$1" ] && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
+# make_app <app name> <executable name> — a fake app bundle in ~/Applications.
+# The program writes the secrets it received to ~/app-env.out after a short
+# delay, which also shows that it keeps running after `secret open` exits.
+make_app() {
+  local bundle="$HOME/Applications/$1.app"
+  mkdir -p "$bundle/Contents/MacOS"
+  cat > "$bundle/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>$2</string>
+</dict></plist>
+PLIST
+  cat > "$bundle/Contents/MacOS/$2" <<'APP'
+#!/bin/sh
+sleep 0.3
+printf '%s|%s' "$KC_ONE" "${OP_ONE-unset}" > "$HOME/app-env.out"
+APP
+  chmod +x "$bundle/Contents/MacOS/$2"
+}
+
+@test "open starts the app with its secrets, even when the executable name differs" {
+  make_app "Fake Test App" fake-exe
+  stub pgrep 'exit 1'
+  write_map <<'EOF'
+KC_ONE     keychain
+OP_ONE     op://Vault/Item/field
+app Fake Test App    KC_ONE
+app Fake Test App    OP_ONE
+EOF
+  run "$SECRET" open Fake Test App
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Started Fake Test App with 2 secret(s)."* ]] || false
+  wait_for_file "$HOME/app-env.out"
+  [ "$(cat "$HOME/app-env.out")" = "kc-value-123|op-value-456" ]
+  [ "$(calls_matching 'pgrep -f ^')" -eq 1 ]
+}
+
+@test "open refuses to start an app that is already running" {
+  make_app "Fake Test App" fake-exe
+  stub pgrep 'exit 0'
+  write_map <<'EOF'
+KC_ONE     keychain
+app Fake Test App    KC_ONE
+EOF
+  run "$SECRET" open Fake Test App
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"is running. Quit it first"* ]] || false
+  sleep 0.6
+  [ ! -e "$HOME/app-env.out" ]
+}
+
+@test "open reports an app that is not in the map" {
+  write_map <<'EOF'
+KC_ONE     keychain
+app Other    KC_ONE
+EOF
+  run "$SECRET" open Fake Test App
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no app named 'Fake Test App' in the map"* ]] || false
+}
+
+@test "open reports an app that is not installed" {
+  write_map <<'EOF'
+KC_ONE     keychain
+app Missing App    KC_ONE
+EOF
+  run "$SECRET" open Missing App
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"app not found: Missing App"* ]] || false
+}
+
+@test "open fails closed and does not start the app when a secret fails" {
+  make_app "Fake Test App" fake-exe
+  stub pgrep 'exit 1'
+  stub op 'exit 1'
+  write_map <<'EOF'
+KC_ONE     keychain
+OP_ONE     op://Vault/Item/field
+app Fake Test App    KC_ONE,OP_ONE
+EOF
+  run "$SECRET" open Fake Test App
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot resolve OP_ONE"* ]] || false
+  sleep 0.6
+  [ ! -e "$HOME/app-env.out" ]
+}
+
+@test "open --optional starts the app without the secret that failed" {
+  make_app "Fake Test App" fake-exe
+  stub pgrep 'exit 1'
+  stub op 'exit 1'
+  write_map <<'EOF'
+KC_ONE     keychain
+OP_ONE     op://Vault/Item/field
+app Fake Test App    KC_ONE,OP_ONE
+EOF
+  run "$SECRET" open --optional Fake Test App
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning: OP_ONE:"* ]] || false
+  wait_for_file "$HOME/app-env.out"
+  [ "$(cat "$HOME/app-env.out")" = "kc-value-123|unset" ]
+}
