@@ -84,3 +84,14 @@ setup() {
   # later steps still ran
   [ -L "$HOME/.zshrc" ]
 }
+
+@test "bootstrap links the secret command, creates the map once and keeps later edits" {
+  run "$REPO_ROOT/bootstrap.sh" --no-brew --no-macos
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$HOME/.local/bin/secret")" = "$REPO_ROOT/bin/secret" ]
+  [ -f "$HOME/.config/secrets/secrets.map" ]
+  echo "EXTRA_KEY keychain" >> "$HOME/.config/secrets/secrets.map"
+  run "$REPO_ROOT/bootstrap.sh" --no-brew --no-macos
+  [ "$status" -eq 0 ]
+  grep -q "EXTRA_KEY keychain" "$HOME/.config/secrets/secrets.map"
+}

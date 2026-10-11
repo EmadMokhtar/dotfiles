@@ -448,3 +448,14 @@ EOF
   wait_for_file "$HOME/app-env.out"
   [ "$(cat "$HOME/app-env.out")" = "kc-value-123|unset" ]
 }
+
+# ---- the example map ----------------------------------------------------------
+
+@test "the example map is valid and lists the GitHub token and the Claude app" {
+  mkdir -p "$(dirname "$MAP")"
+  install -m 600 "$REPO_ROOT/secrets/secrets.map.example" "$MAP"
+  run "$SECRET" list
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -Eq '^GITHUB_PERSONAL_ACCESS_TOKEN +command$'
+  echo "$output" | grep -Eq '^Claude +GITHUB_PERSONAL_ACCESS_TOKEN$'
+}

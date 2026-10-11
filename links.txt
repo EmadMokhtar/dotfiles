@@ -10,3 +10,4 @@ claude/CLAUDE.md              ~/.claude/CLAUDE.md
 claude/statusline-command.sh  ~/.claude/statusline-command.sh
 claude/hooks                  ~/.claude/hooks
 claude/skills                 ~/.claude/skills
+bin/secret                    ~/.local/bin/secret
