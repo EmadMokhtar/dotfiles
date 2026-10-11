@@ -260,3 +260,75 @@ EOF
   [[ "$output" == *"continuing without secrets"* ]] || false
   [[ "$output" == *"started|unset"* ]] || false
 }
+
+# ---- secret set -----------------------------------------------------------------
+
+@test "set asks security for the value, never passes it, and creates the map" {
+  run "$SECRET" set NEW_KEY
+  [ "$status" -eq 0 ]
+  [ "$(cat "$CALL_LOG")" = "security add-generic-password -U -a NEW_KEY -s dotfiles-secrets -w" ]
+  [ "$(stat -f %Lp "$HOME/.config/secrets")" = "700" ]
+  [ "$(stat -f %Lp "$MAP")" = "600" ]
+  grep -Eq '^NEW_KEY +keychain$' "$MAP"
+}
+
+@test "set does not add a second line for a name that is already in the map" {
+  write_map <<'EOF'
+NEW_KEY    keychain
+EOF
+  run "$SECRET" set NEW_KEY
+  [ "$status" -eq 0 ]
+  [ "$(grep -c NEW_KEY "$MAP")" -eq 1 ]
+  [ "$(calls_matching 'add-generic-password')" -eq 1 ]
+}
+
+@test "set refuses a name that has another source" {
+  write_map <<'EOF'
+OP_ONE     op://Vault/Item/field
+EOF
+  run "$SECRET" set OP_ONE
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"another source"* ]] || false
+  [ "$(calls_matching 'add-generic-password')" -eq 0 ]
+}
+
+@test "set starts a new line when the map does not end with one" {
+  mkdir -p "$(dirname "$MAP")"
+  printf 'FIRST_KEY keychain' > "$MAP"
+  chmod 600 "$MAP"
+  run "$SECRET" set SECOND_KEY
+  [ "$status" -eq 0 ]
+  [ "$(wc -l < "$MAP" | tr -d ' ')" -eq 2 ]
+  grep -Eq '^FIRST_KEY keychain$' "$MAP"
+  grep -Eq '^SECOND_KEY +keychain$' "$MAP"
+}
+
+@test "set leaves the map alone when security fails" {
+  write_map <<'EOF'
+FIRST_KEY  keychain
+EOF
+  stub security 'exit 1'
+  run "$SECRET" set SECOND_KEY
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not store SECOND_KEY"* ]] || false
+  [ "$(grep -c SECOND_KEY "$MAP")" -eq 0 ]
+}
+
+@test "set works for a name that an app line lists before it has a secret line" {
+  write_map <<'EOF'
+app Zed    LATER_KEY
+EOF
+  run "$SECRET" set LATER_KEY
+  [ "$status" -eq 0 ]
+  grep -Eq '^LATER_KEY +keychain$' "$MAP"
+}
+
+@test "set rejects bad names and a missing name" {
+  run "$SECRET" set 1bad
+  [ "$status" -eq 1 ]
+  run "$SECRET" set app
+  [ "$status" -eq 1 ]
+  run "$SECRET" set
+  [ "$status" -eq 2 ]
+  [ "$(calls_matching 'add-generic-password')" -eq 0 ]
+}
