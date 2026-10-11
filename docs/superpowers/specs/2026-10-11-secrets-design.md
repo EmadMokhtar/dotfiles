@@ -134,13 +134,20 @@ All commands exit with:
 
 1. Parse the names before `--`. Require at least one name and a command.
 2. Resolve each name with its source (§6).
-3. In a subshell: export the values, then `exec command`.
+3. Export the values in the script's own process, then `exec command`. `exec`
+   replaces the script, so no extra process stays in between.
 
 If a name is not in the map, or its source fails or returns an empty value:
 
 - default: print an error naming the secret and the reason, exit `1`, run nothing;
 - `--optional`: print a warning, leave that variable unset, resolve the others,
   and run the command.
+
+The map itself can also be unusable: missing, owned by someone else, writable by
+other users, or with a syntax error. With `--optional`, `run` prints a warning
+and starts the command without any secrets. Without it, `run` stops with exit
+code `1`. This is for wrappers such as `claude()`, which must start even when the
+map is broken. `open` and `set` always stop.
 
 ### `secret open [--optional] <App name>`
 
@@ -217,8 +224,9 @@ Linux notes for the next phase:
 
 ## 7. Value handling rules
 
-- A value lives only in a shell variable inside the subshell that runs the
-  command. It is never written to a file, a log, or an error message.
+- A value lives only in a shell variable inside the process that runs the
+  command (for `open`, a subshell that starts the app). It is never written to a
+  file, a log, or an error message.
 - A value is never an argument of another command (so `ps` cannot show it),
   with the one documented fallback in §5.
 - `set -x` is never enabled in `bin/secret`.

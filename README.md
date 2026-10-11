@@ -48,6 +48,8 @@ re-running keeps everything in the Brewfile current.
 | `editors/zed/` | Zed `settings.json` |
 | `claude/` | Claude Code settings, `CLAUDE.md`, hooks, skills, status line |
 | `iterm2/` | iTerm2 preferences (iTerm2 reads and writes this file directly) |
+| `bin/` | `secret` — gives secrets to a program or app when it starts |
+| `secrets/` | `secrets.map.example` — template for the secrets map (the real map is not in git) |
 | `lib/` | Bootstrap helpers (`common.sh`, `link.sh`, `steps.sh`) sourced by `bootstrap.sh` |
 | `tests/` | bats tests for the bootstrap scripts |
 | `docs/` | Design spec and plan this bootstrap was built from |
@@ -57,6 +59,49 @@ re-running keeps everything in the Brewfile current.
 
 Copy `zsh/local.zsh.example` to `~/.config/zsh/local.zsh` and edit. It is
 sourced last and never committed.
+
+## Secrets
+
+`bin/secret` gives secrets to a program only when you start it. Nothing is
+exported at shell start and no value is stored in this repo. macOS only for now.
+
+Each secret has a name and one source. They are listed in
+`~/.config/secrets/secrets.map`, which is not tracked in git. Bootstrap creates
+it from `secrets/secrets.map.example` and never overwrites it.
+
+| Source | Meaning |
+|---|---|
+| `keychain` | You type the value once with `secret set NAME`. It is kept in the login keychain. |
+| `op://Vault/Item/field` | Read from 1Password with `op read`. |
+| `cmd:<command>` | The output of a command, for example `cmd:gh auth token`. |
+
+```bash
+secret set OPENAI_API_KEY                      # hidden prompt, saved in the keychain
+secret run OPENAI_API_KEY -- some-tool --flag  # run one program with the secret
+secret open Zed                                # start a macOS app with its secrets
+secret list                                    # names and sources, never values
+```
+
+An app gets the secrets on its `app` lines in the map. Use commas for several,
+or repeat the line:
+
+```
+app Zed    OPENAI_API_KEY,ANTHROPIC_API_KEY
+app Zed    OLLAMA_API_KEY
+```
+
+Rules and limits:
+
+- If a secret cannot be read, nothing starts. `--optional` turns this into a
+  warning and the program starts without that secret. `claude` uses it.
+- `secret open` stops if the app is already running. Quit it first: a running app
+  keeps the environment it started with.
+- An app started from the Dock, Spotlight or Login Items gets no secrets. Start
+  it with `secret open`.
+- The map can run commands (`cmd:` lines), so `secret` refuses to read it when
+  another user owns it or can write it. Keep it at mode 600.
+- This reduces accidental exposure. It does not protect against other
+  programs running as you: they can call `security` too.
 
 ## Installed by hand (no Homebrew cask)
 
@@ -68,12 +113,12 @@ GarageBand, Noir, Wipr, PiPer, SimpleLogin.
 ## Development
 
 ```bash
-bats tests/                                        # all tests
-shellcheck bootstrap.sh lib/*.sh macos/defaults.sh # lint
+bats tests/                                                   # all tests
+shellcheck bootstrap.sh lib/*.sh macos/defaults.sh bin/secret # lint
 ```
 
-Tests run in a temporary `HOME` with fake `brew`, `git`, `defaults` and
-`killall`, so they never touch the real machine.
+Tests run in a temporary `HOME` with fake `brew`, `git`, `defaults`,
+`killall`, `op` and `security`, so they never touch the real machine.
 
 ## Testing on a fresh Mac (optional)
 
