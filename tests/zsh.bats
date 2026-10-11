@@ -43,3 +43,27 @@ setup() { make_sandbox; }
   run zsh -c "PATH=/usr/bin:$HOME/.docker/bin; source '$REPO_ROOT/zsh/zprofile'; print -l \${(s.:.)PATH}"
   [ "$(printf '%s\n' "$output" | grep -c '\.docker/bin$')" -eq 1 ]
 }
+
+@test "claude runs through secret when secret is installed" {
+  ln -s "$REPO_ROOT/zsh/zshrc" "$HOME/.zshrc"
+  stub secret
+  run zsh -ic 'claude --version'
+  [ "$status" -eq 0 ]
+  [ "$(calls_matching 'secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN -- claude --version')" -eq 1 ]
+}
+
+@test "claude is not wrapped when secret is not installed" {
+  ln -s "$REPO_ROOT/zsh/zshrc" "$HOME/.zshrc"
+  PATH="$STUB_BIN:/usr/bin:/bin" run zsh -ic 'whence -w claude'
+  [[ "$output" != *"claude: function"* ]] || false
+}
+
+@test "claude still starts, with a warning, when the secrets map is missing" {
+  ln -s "$REPO_ROOT/zsh/zshrc" "$HOME/.zshrc"
+  ln -s "$REPO_ROOT/bin/secret" "$STUB_BIN/secret"
+  stub claude 'echo claude-started'
+  run zsh -ic 'claude --version'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"claude-started"* ]] || false
+  [[ "$output" == *"continuing without secrets"* ]] || false
+}
