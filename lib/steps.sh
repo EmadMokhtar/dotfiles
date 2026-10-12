@@ -150,6 +150,22 @@ step_links() {
   link_manifest "$DOTFILES_ROOT/links.txt" "$DOTFILES_ROOT"
 }
 
+# ---- 6b. Secrets map: create ~/.config/secrets/secrets.map once ---------------
+# The real map (secret names and where each value comes from) stays out of git.
+# It is copied from the example only when it is missing, so edits survive.
+# A symlink counts as existing, even when its target is missing.
+step_secrets_map() {
+  local dir="$HOME/.config/secrets" map="$HOME/.config/secrets/secrets.map" verb="created"
+  if [ -e "$map" ] || [ -L "$map" ]; then
+    log_skip "$map already exists"
+    return 0
+  fi
+  [ "$DRY_RUN" = "1" ] && verb="would create"
+  run_cmd mkdir -p -m 700 "$dir" || return 1
+  run_cmd install -m 600 "$DOTFILES_ROOT/secrets/secrets.map.example" "$map" || return 1
+  log_ok "$verb $map"
+}
+
 # ---- 7. iTerm2: load preferences from the repo -------------------------------
 step_iterm2() {
   local folder="$DOTFILES_ROOT/iterm2"

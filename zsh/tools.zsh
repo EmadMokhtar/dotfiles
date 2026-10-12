@@ -39,12 +39,12 @@ command -v terraform >/dev/null 2>&1 && complete -o nospace -C "$(command -v ter
 # ---- worktrunk: `wt` git worktree manager ----------------------------------
 command -v wt >/dev/null 2>&1 && eval "$(command wt config shell init zsh)"
 
-# ---- GitHub token for the Claude Code github MCP plugin --------------------
-# The plugin reads ${GITHUB_PERSONAL_ACCESS_TOKEN}. The token is read from
-# gh's keychain only when `claude` starts and is passed to that process
-# alone, so other programs started from the shell never see it.
-if command -v gh >/dev/null 2>&1; then
-  claude() { GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)" command claude "$@"; }
+# ---- Claude Code: secrets from `secret` -------------------------------------
+# The GitHub MCP plugin reads ${GITHUB_PERSONAL_ACCESS_TOKEN}. `secret` reads it
+# (see ~/.config/secrets/secrets.map) and gives it to this one process only.
+# --optional: start claude even when the token cannot be read.
+if command -v secret >/dev/null 2>&1; then
+  claude() { secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN -- claude "$@"; }
 fi
 
 unset _brew_prefix

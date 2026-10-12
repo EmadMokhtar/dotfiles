@@ -21,8 +21,9 @@ It manages four layers:
 3. macOS system preferences via `defaults write`.
 4. App-specific configuration (Zed, Claude Code, iTerm2).
 
-Non-goals: secrets management, Linux support, App Store apps, hardware driver
-installers that have no Homebrew cask.
+Non-goals: Linux support, App Store apps, hardware driver installers that have
+no Homebrew cask. (Secrets management was a non-goal here; it is now covered by
+[2026-10-11-secrets-design.md](2026-10-11-secrets-design.md).)
 
 ## 2. Decisions
 

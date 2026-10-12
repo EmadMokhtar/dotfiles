@@ -72,6 +72,40 @@ setup() {
   [ "$(readlink "$HOME/.zshrc")" = "$REPO_ROOT/zsh/zshrc" ]
   [ "$(readlink "$HOME/.claude/skills")" = "$REPO_ROOT/claude/skills" ]
   [ "$(readlink "$HOME/.config/git/ignore")" = "$REPO_ROOT/git/ignore" ]
+  [ "$(readlink "$HOME/.local/bin/secret")" = "$REPO_ROOT/bin/secret" ]
+}
+
+@test "step_secrets_map creates the map from the example, mode 600 in a 700 directory" {
+  step_secrets_map
+  [ "$(stat -f %Lp "$HOME/.config/secrets")" = "700" ]
+  [ "$(stat -f %Lp "$HOME/.config/secrets/secrets.map")" = "600" ]
+  cmp "$HOME/.config/secrets/secrets.map" "$REPO_ROOT/secrets/secrets.map.example"
+}
+
+@test "step_secrets_map never overwrites an existing map" {
+  mkdir -p "$HOME/.config/secrets"
+  echo "MY_OWN keychain" > "$HOME/.config/secrets/secrets.map"
+  run step_secrets_map
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already exists"* ]] || false
+  [ "$(cat "$HOME/.config/secrets/secrets.map")" = "MY_OWN keychain" ]
+}
+
+@test "step_secrets_map leaves a dangling symlink alone" {
+  mkdir -p "$HOME/.config/secrets"
+  ln -s "$HOME/dotfiles-private/secrets.map" "$HOME/.config/secrets/secrets.map"
+  run step_secrets_map
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already exists"* ]] || false
+  [ "$(readlink "$HOME/.config/secrets/secrets.map")" = "$HOME/dotfiles-private/secrets.map" ]
+  [ ! -e "$HOME/dotfiles-private" ]
+}
+
+@test "step_secrets_map changes nothing under --dry-run" {
+  DRY_RUN=1 run step_secrets_map
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[dry-run]"* ]] || false
+  [ ! -e "$HOME/.config/secrets" ]
 }
 
 @test "step_iterm2 writes both preference keys" {
