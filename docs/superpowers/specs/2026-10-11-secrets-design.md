@@ -112,6 +112,9 @@ The map can contain `cmd:` lines, so a writable map is a code-execution risk.
 - is not owned by the current user, or
 - has any group or other write bit set (mode & 022).
 
+A map that is a symlink is checked through the link: the owner and mode of the
+file that is really read count, not those of the link.
+
 ## 5. Commands
 
 All commands exit with:
@@ -124,9 +127,16 @@ All commands exit with:
 
 1. If `NAME` is in the map with a source other than `keychain`, stop with an
    error. (This prevents hiding a 1Password reference behind a stored value.)
-2. Run `security add-generic-password -U -a NAME -s dotfiles-secrets -w` with
-   **no value argument**. `security` then asks for the value itself, with hidden
-   input, so the value is never in a command line.
+2. Ask for the value twice, with hidden input. The prompts show only on a
+   terminal; piped input must contain the value twice. Stop if the value is empty
+   or the two values differ. Then send the value, as hex, on the standard input of
+   `security -i`, as one command:
+   `add-generic-password -U -a NAME -s dotfiles-secrets -X <hex>`.
+   The value is never in a command line. The script reads the value itself
+   because the prompt of `security ... -w` cuts a value at 128 characters, and
+   real keys are longer. A value can have at most 1500 bytes, because
+   `security -i` reads lines of at most 4096 bytes; a longer value is refused
+   with a message that points to an `op://` source.
 3. If `NAME` is not in the map, append `NAME  keychain`. Create the directory
    (mode 700) and the file (mode 600) first if needed.
 
@@ -200,7 +210,7 @@ Everything that depends on the operating system is in five functions. A
 | Function | macOS (this phase) | Linux (next phase) |
 |---|---|---|
 | `os_store_get NAME` | `security find-generic-password … -w` | `secret-tool lookup service dotfiles-secrets account NAME` |
-| `os_store_set NAME` | `security add-generic-password -U … -w` (it prompts) | hidden prompt with `read -s`, then `secret-tool store` with the value on standard input |
+| `os_store_set NAME` | the value on standard input, as hex, to `security -i` (`add-generic-password -U … -X`) | `secret-tool store` with the value on standard input |
 | `os_file_owner_mode PATH` | `stat -f '%u %Lp'` | `stat -c '%u %a'` |
 | `os_app_executable APP` | `.app` bundle and `plutil` | the `Exec=` line of a `.desktop` file in `~/.local/share/applications` or `/usr/share/applications` |
 | `os_app_running APP` | `pgrep -f` on the bundle path | `pgrep -f` on the executable path |
@@ -323,9 +333,13 @@ Test values are fake strings.
 - Map: comments and blank lines; app names with spaces; merged app lines;
   duplicate `NAME`; invalid `NAME`; reserved name `app`; app list with an
   unknown name; refusal when the map is group-writable or foreign-owned.
-- `set`: calls `security` with `-w` as the last argument and no value; appends to
-  the map; creates directory (700) and file (600); refuses a name that has a
-  non-keychain source.
+- `set`: sends the value as hex on the standard input of `security -i`, never in
+  arguments, and a long value with spaces and quotes arrives intact; refuses an
+  empty, differing or too long (over 1500 bytes) value; appends to the map;
+  creates directory (700) and file (600); refuses a name that has a non-keychain
+  source.
+- A map that is a symlink to a group-writable file is refused; one to a private
+  file is accepted.
 - `run`: injects values from all three source types; unknown name fails; one
   failing source aborts and the command does not run; empty value fails;
   `--optional` warns and still runs; exit code of the command is passed through;

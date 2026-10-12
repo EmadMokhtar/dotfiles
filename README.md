@@ -76,7 +76,7 @@ it from `secrets/secrets.map.example` and never overwrites it.
 | `cmd:<command>` | The output of a command, for example `cmd:gh auth token`. |
 
 ```bash
-secret set OPENAI_API_KEY                      # hidden prompt, saved in the keychain
+secret set OPENAI_API_KEY                      # type the value twice (hidden); kept in the keychain
 secret run OPENAI_API_KEY -- some-tool --flag  # run one program with the secret
 secret open Zed                                # start a macOS app with its secrets
 secret list                                    # names and sources, never values
@@ -92,6 +92,8 @@ app Zed    OLLAMA_API_KEY
 
 Rules and limits:
 
+- `secret set` takes values up to 1500 bytes. For a longer one, use an
+  `op://` source. A value is never passed on a command line.
 - If a secret cannot be read, nothing starts. `--optional` turns this into a
   warning and the program starts without that secret. `claude` uses it.
 - `secret open` stops if the app is already running. Quit it first: a running app

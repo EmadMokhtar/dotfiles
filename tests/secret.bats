@@ -5,7 +5,7 @@ setup() {
   SECRET="$REPO_ROOT/bin/secret"
   MAP="$HOME/.config/secrets/secrets.map"
   # Fake commands. Every value below is a fake test string.
-  stub security 'case "$1" in find-generic-password) echo "kc-value-123";; esac'
+  stub security 'case "$1" in find-generic-password) echo "kc-value-123";; -i) cat > /dev/null;; esac'
   stub op 'case "$1" in read) echo "op-value-456";; esac'
 }
 
@@ -263,40 +263,89 @@ EOF
 
 # ---- secret set -----------------------------------------------------------------
 
-@test "set asks security for the value, never passes it, and creates the map" {
-  run "$SECRET" set NEW_KEY
+# set_value <name> <value> — run `secret set`, typing the value twice.
+set_value() {
+  printf '%s\n%s\n' "$2" "$2" | "$SECRET" set "$1"
+}
+
+# sent_value — print the value that was sent to security, decoded from hex.
+sent_value() {
+  local line
+  line="$(cat "$HOME/security.stdin")"
+  printf '%s' "${line##* }" | xxd -r -p
+}
+
+@test "set sends the value to security on standard input, never on a command line, and creates the map" {
+  stub security 'cat > "$HOME/security.stdin"'
+  run set_value NEW_KEY 'fake-secret-value-1'
   [ "$status" -eq 0 ]
-  [ "$(cat "$CALL_LOG")" = "security add-generic-password -U -a NEW_KEY -s dotfiles-secrets -w" ]
+  [ "$(cat "$CALL_LOG")" = "security -i" ]
+  [ "$(calls_matching 'fake-secret-value-1')" -eq 0 ]
+  [[ "$(cat "$HOME/security.stdin")" == "add-generic-password -U -a NEW_KEY -s dotfiles-secrets -X "* ]] || false
+  [ "$(sent_value)" = "fake-secret-value-1" ]
   [ "$(stat -f %Lp "$HOME/.config/secrets")" = "700" ]
   [ "$(stat -f %Lp "$MAP")" = "600" ]
   grep -Eq '^NEW_KEY +keychain$' "$MAP"
+}
+
+@test "set keeps a long value with spaces, quotes and dollar signs intact" {
+  stub security 'cat > "$HOME/security.stdin"'
+  local value
+  value="p@ss \"q\" \$x \`y\` \\z =w  $(printf 'k%.0s' $(seq 170))end"
+  run set_value NEW_KEY "$value"
+  [ "$status" -eq 0 ]
+  [ "$(sent_value)" = "$value" ]
+}
+
+@test "set refuses two values that differ and stores nothing" {
+  run bash -c "printf 'one\ntwo\n' | '$SECRET' set NEW_KEY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"the two values differ"* ]] || false
+  [ "$(calls_matching 'security')" -eq 0 ]
+  [ ! -e "$MAP" ]
+}
+
+@test "set refuses an empty value and stores nothing" {
+  run bash -c "printf '\n\n' | '$SECRET' set NEW_KEY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"the value is empty"* ]] || false
+  [ "$(calls_matching 'security')" -eq 0 ]
+  [ ! -e "$MAP" ]
+}
+
+@test "set refuses a value that is too long for security and stores nothing" {
+  run set_value NEW_KEY "$(printf 'k%.0s' $(seq 1600))"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"longer than 1500 bytes"* ]] || false
+  [ "$(calls_matching 'security')" -eq 0 ]
+  [ ! -e "$MAP" ]
 }
 
 @test "set does not add a second line for a name that is already in the map" {
   write_map <<'EOF'
 NEW_KEY    keychain
 EOF
-  run "$SECRET" set NEW_KEY
+  run set_value NEW_KEY fake-secret-value-1
   [ "$status" -eq 0 ]
   [ "$(grep -c NEW_KEY "$MAP")" -eq 1 ]
-  [ "$(calls_matching 'add-generic-password')" -eq 1 ]
+  [ "$(calls_matching 'security -i')" -eq 1 ]
 }
 
-@test "set refuses a name that has another source" {
+@test "set refuses a name that has another source before asking for a value" {
   write_map <<'EOF'
 OP_ONE     op://Vault/Item/field
 EOF
-  run "$SECRET" set OP_ONE
+  run set_value OP_ONE fake-secret-value-1
   [ "$status" -eq 1 ]
   [[ "$output" == *"another source"* ]] || false
-  [ "$(calls_matching 'add-generic-password')" -eq 0 ]
+  [ "$(calls_matching 'security')" -eq 0 ]
 }
 
 @test "set starts a new line when the map does not end with one" {
   mkdir -p "$(dirname "$MAP")"
   printf 'FIRST_KEY keychain' > "$MAP"
   chmod 600 "$MAP"
-  run "$SECRET" set SECOND_KEY
+  run set_value SECOND_KEY fake-secret-value-1
   [ "$status" -eq 0 ]
   [ "$(wc -l < "$MAP" | tr -d ' ')" -eq 2 ]
   grep -Eq '^FIRST_KEY keychain$' "$MAP"
@@ -307,8 +356,8 @@ EOF
   write_map <<'EOF'
 FIRST_KEY  keychain
 EOF
-  stub security 'exit 1'
-  run "$SECRET" set SECOND_KEY
+  stub security 'cat > /dev/null; exit 1'
+  run set_value SECOND_KEY fake-secret-value-1
   [ "$status" -eq 1 ]
   [[ "$output" == *"could not store SECOND_KEY"* ]] || false
   [ "$(grep -c SECOND_KEY "$MAP")" -eq 0 ]
@@ -318,7 +367,7 @@ EOF
   write_map <<'EOF'
 app Zed    LATER_KEY
 EOF
-  run "$SECRET" set LATER_KEY
+  run set_value LATER_KEY fake-secret-value-1
   [ "$status" -eq 0 ]
   grep -Eq '^LATER_KEY +keychain$' "$MAP"
 }
@@ -330,7 +379,29 @@ EOF
   [ "$status" -eq 1 ]
   run "$SECRET" set
   [ "$status" -eq 2 ]
-  [ "$(calls_matching 'add-generic-password')" -eq 0 ]
+  [ "$(calls_matching 'security')" -eq 0 ]
+}
+
+# ---- the map as a symlink -------------------------------------------------------
+
+@test "a symlinked map is checked through the link, so a writable target is refused" {
+  mkdir -p "$(dirname "$MAP")"
+  printf 'A cmd:echo from-a-writable-file\n' > "$HOME/target.map"
+  chmod 666 "$HOME/target.map"
+  ln -s "$HOME/target.map" "$MAP"
+  run "$SECRET" run A -- true
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can be written by other users"* ]] || false
+}
+
+@test "a symlinked map with a private target is accepted" {
+  mkdir -p "$(dirname "$MAP")"
+  printf 'A cmd:echo from-a-private-file\n' > "$HOME/target.map"
+  chmod 600 "$HOME/target.map"
+  ln -s "$HOME/target.map" "$MAP"
+  run "$SECRET" run A -- sh -c 'printf "%s" "$A"'
+  [ "$status" -eq 0 ]
+  [ "$output" = "from-a-private-file" ]
 }
 
 # ---- secret open ------------------------------------------------------------------
