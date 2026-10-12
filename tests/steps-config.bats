@@ -91,6 +91,16 @@ setup() {
   [ "$(cat "$HOME/.config/secrets/secrets.map")" = "MY_OWN keychain" ]
 }
 
+@test "step_secrets_map leaves a dangling symlink alone" {
+  mkdir -p "$HOME/.config/secrets"
+  ln -s "$HOME/dotfiles-private/secrets.map" "$HOME/.config/secrets/secrets.map"
+  run step_secrets_map
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already exists"* ]] || false
+  [ "$(readlink "$HOME/.config/secrets/secrets.map")" = "$HOME/dotfiles-private/secrets.map" ]
+  [ ! -e "$HOME/dotfiles-private" ]
+}
+
 @test "step_secrets_map changes nothing under --dry-run" {
   DRY_RUN=1 run step_secrets_map
   [ "$status" -eq 0 ]

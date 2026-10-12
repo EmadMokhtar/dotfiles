@@ -153,9 +153,10 @@ step_links() {
 # ---- 6b. Secrets map: create ~/.config/secrets/secrets.map once ---------------
 # The real map (secret names and where each value comes from) stays out of git.
 # It is copied from the example only when it is missing, so edits survive.
+# A symlink counts as existing, even when its target is missing.
 step_secrets_map() {
   local dir="$HOME/.config/secrets" map="$HOME/.config/secrets/secrets.map" verb="created"
-  if [ -e "$map" ]; then
+  if [ -e "$map" ] || [ -L "$map" ]; then
     log_skip "$map already exists"
     return 0
   fi
