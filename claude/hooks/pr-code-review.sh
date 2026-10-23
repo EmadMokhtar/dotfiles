@@ -2,17 +2,41 @@
 # PostToolUse hook (matcher: Bash): after a Bash call creates a pull request,
 # tell Claude to run `/code-review high` on it in a fresh subagent.
 #
-# It does nothing unless the command ran `gh pr create` AND its output holds
+# It does nothing unless the command runs `gh pr create` AND its output holds
 # a pull request URL, so a failed create triggers no review. It only adds a
 # note to Claude's context; it never runs a review itself.
 
 input=$(cat)
 
-command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
-case "$command" in
-  *"gh pr create"*) ;;
-  *) exit 0 ;;
-esac
+# A jq program that prints true when the command looks like it runs
+# `gh pr create`. A missed review is worse than a needless one, so the match
+# is broad: any line with the words gh, pr and create, in that order. Only
+# heredoc bodies are dropped first, because a PR body written with
+# `--body-file - <<'EOF'` often mentions the command.
+# - `\` at the end of a line joins it to the next line.
+# - Every heredoc on a line is found (`<<TAG`, `<<-TAG`, `<<'TAG'`,
+#   `<<"TAG"`, any tag text), but not a here-string (`<<<`). Their bodies
+#   follow in order; each ends at a line that is only its tag.
+# - Text on the same line still counts, even inside quotes, for example
+#   `--body "next: gh pr create"`. That queues a needless review.
+read -r -d '' runs_gh_pr_create <<'JQ' || true
+def heredoc_tags:
+  [match("(?<!<)<<(?!<)-?[ \t]*(?:'(?<sq>[^'\n]+)'|\"(?<dq>[^\"\n]+)\"|(?<bare>[^ \t\n;&|<>()'\"`]+))"; "g")
+   | [.captures[] | .string | select(. != null)][0]];
+
+.tool_input.command // ""
+| gsub("\\\\\n"; " ")
+| split("\n")
+| reduce .[] as $line ({kept: [], tags: []};
+    if (.tags | length) > 0 then
+      if ($line | gsub("^[ \t]+|[ \t]+$"; "")) == .tags[0] then .tags |= .[1:] else . end
+    else
+      .kept += [$line] | .tags += ($line | heredoc_tags)
+    end)
+| any(.kept[]; test("\\bgh\\b.*\\bpr\\b.*\\bcreate\\b"))
+JQ
+
+[ "$(printf '%s' "$input" | jq -r "$runs_gh_pr_create")" = "true" ] || exit 0
 
 # The PR URL that `gh pr create` prints. The last one wins, in case the
 # command printed others first.
