@@ -72,5 +72,5 @@ English is not my first language. Apply these rules in every response:
 ## Pull requests
 
 Always assign me to any pull request you create or open.
-- When creating a new PR: `gh pr create --assignee @EmadMokhtar ...`
-- When opening or editing an existing PR that has no assignee yet: `gh pr edit <PR-number> --add-assignee @EmadMokhtar`
+- When creating a new PR: `gh pr create --assignee EmadMokhtar ...`
+- When opening or editing an existing PR that has no assignee yet: `gh pr edit <PR-number> --add-assignee EmadMokhtar`
