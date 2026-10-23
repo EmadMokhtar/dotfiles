@@ -60,6 +60,36 @@ re-running keeps everything in the Brewfile current.
 Copy `zsh/local.zsh.example` to `~/.config/zsh/local.zsh` and edit. It is
 sourced last and never committed.
 
+## Claude Code settings
+
+`~/.claude/settings.json` is a normal file, not a symlink. Tools such as the
+StreamDeck plugin and iTerm2 add their own hooks to it by writing a new file
+over it, which would replace a symlink. `claude/settings.json` holds only the
+portable settings, and bootstrap merges them into the live file with a
+three-way merge. It compares both files with the base it applied last time,
+saved in `~/.claude/.dotfiles-settings-base.json`, to see who changed what:
+
+- Keys that only the live file has stay, for example a tool's hooks.
+- A value you changed on this machine (for example with `/model`) stays.
+  A value you did not change gets the repo's new value.
+- A hook or plugin removed from the repo, or a hook whose matcher or command
+  changed, is removed from the live file, unless you changed it locally.
+- A hook with the same matcher and commands is replaced, not added twice.
+  `~/x`, `$HOME/x`, `${HOME}/x` and `/Users/me/x` count as the same path.
+- The first run on a machine has no saved base, so the repo wins for values
+  both files set.
+
+Bootstrap prints which keys it changed and saves the old file in
+`~/.dotfiles-backup/<time>/`. The rules are in `lib/claude-settings-merge.jq`.
+A change made only in the live file does not go back to the repo. Copy it into
+`claude/settings.json` by hand if every machine should have it.
+
+Moving from the old symlink: on a machine where `~/.claude/settings.json` was
+still a link to the repo, the iTerm2 `cc-status` hooks are no longer in the
+repo, so they disappear. Turn iTerm2's Claude Code integration on again to add
+them back. The old file content is in git history (`git show
+<old-commit>:claude/settings.json`).
+
 ## Secrets
 
 `bin/secret` gives secrets to a program only when you start it. Nothing is

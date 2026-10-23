@@ -4,8 +4,9 @@
 #   ./bootstrap.sh [--dry-run] [--extra] [--no-brew] [--no-macos] [--help]
 #
 # Steps: Xcode CLT -> Homebrew -> brew bundle -> oh-my-zsh -> goenv/nvm ->
-#        symlinks -> secrets map -> iTerm2 prefs -> macOS defaults. A failing step is reported
-#        at the end; the others still run.
+#        symlinks -> secrets map -> Claude Code settings (merged into
+#        ~/.claude/settings.json) -> iTerm2 prefs -> macOS defaults. A failing
+#        step is reported at the end; the others still run.
 
 DOTFILES_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export DOTFILES_ROOT
@@ -65,6 +66,7 @@ run_step "oh-my-zsh, plugins and theme" step_omz
 run_step "Version managers (goenv, nvm)" step_version_managers
 run_step "Symlinks" step_links
 run_step "Secrets map" step_secrets_map
+run_step "Claude Code settings" step_claude_settings
 run_step "iTerm2 preferences" step_iterm2
 if [ "$SKIP_MACOS" = "1" ]; then
   log_skip "macOS defaults (--no-macos)"

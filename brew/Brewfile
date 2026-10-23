@@ -26,6 +26,7 @@ brew "gnupg"
 brew "golang-migrate"    # database migrations for Go
 brew "golangci-lint"
 brew "helm"
+brew "jq"                # JSON tool; bootstrap and the Claude hooks need it
 brew "just"              # command runner
 brew "lsusb"
 brew "lychee"            # link checker

@@ -166,6 +166,83 @@ step_secrets_map() {
   log_ok "$verb $map"
 }
 
+# ---- 6c. Claude Code settings: merge the repo base into the live file --------
+# ~/.claude/settings.json is a regular file, not a link. Tools such as the
+# StreamDeck plugin and iTerm2 add their own hooks by renaming a new file over
+# it, which replaces a link. The repo keeps only portable settings. They are
+# merged in with a three-way merge (rules in lib/claude-settings-merge.jq): the
+# base applied last time, saved in ~/.claude/.dotfiles-settings-base.json,
+# shows which values were changed locally and which entries the repo dropped.
+# The tools' own entries stay.
+# CLAUDE_SETTINGS_BASE overrides the base file (used by tests).
+
+# is_json_object <file> — the file holds exactly one JSON object. An empty
+# file counts as an empty object.
+is_json_object() {
+  jq -se 'length == 0 or (length == 1 and (.[0] | type) == "object")' "$1" >/dev/null 2>&1
+}
+
+# save_claude_base <base> <state> — remember the base that was just applied.
+save_claude_base() {
+  cmp -s "$1" "$2" || cp "$1" "$2"
+}
+
+step_claude_settings() {
+  local base="${CLAUDE_SETTINGS_BASE:-$DOTFILES_ROOT/claude/settings.json}"
+  local live="$HOME/.claude/settings.json"
+  local state="$HOME/.claude/.dotfiles-settings-base.json"
+  local anc=/dev/null merged changed tmp
+  command -v jq >/dev/null 2>&1 ||
+    { log_err "jq is not installed; install it (brew install jq), then run again"; return 1; }
+  is_json_object "$base" || { log_err "$base is not one JSON object"; return 1; }
+  if [ -f "$state" ]; then
+    if is_json_object "$state"; then
+      anc="$state"
+    else
+      log_warn "$state is not valid; merging as if no base was applied before"
+    fi
+  fi
+
+  if [ -e "$live" ]; then
+    is_json_object "$live" ||
+      { log_err "$live is not one JSON object; fix it by hand, then run again"; return 1; }
+    merged="$(jq -n --slurpfile live "$live" --slurpfile base "$base" --slurpfile anc "$anc" \
+      --arg home "$HOME" -f "$DOTFILES_ROOT/lib/claude-settings-merge.jq")" || return 1
+    if [ ! -L "$live" ] && [ "$(jq -S . "$live")" = "$(jq -S . <<< "$merged")" ]; then
+      log_skip "$live already up to date"
+      [ "$DRY_RUN" = "1" ] || save_claude_base "$base" "$state" || return 1
+      return 0
+    fi
+    changed="$(jq -rn --slurpfile old "$live" --argjson new "$merged" '
+      ($old[0] // {}) as $o
+      | [(($o | keys_unsorted) + ($new | keys_unsorted) | unique)[] as $k
+         | select($o[$k] != $new[$k]) | $k] | join(", ")')" || return 1
+  else
+    merged="$(jq . "$base")" || return 1
+    changed="new file"
+  fi
+
+  if [ "$DRY_RUN" = "1" ]; then
+    printf '  [dry-run] update %s (%s)\n' "$live" "${changed:-replace link with a file}"
+    return 0
+  fi
+  mkdir -p "$HOME/.claude" || return 1
+  # Back up the content. -L follows an old link to the file it points to.
+  if [ -e "$live" ]; then
+    mkdir -p "$BACKUP_DIR/.claude" || return 1
+    cp -L "$live" "$BACKUP_DIR/.claude/settings.json" || return 1
+  fi
+  # Write a new file next to the old one, then rename it over the old one.
+  # The rename replaces an old link instead of writing into the repo through it.
+  tmp="$(mktemp "$HOME/.claude/.settings.json.XXXXXX")" || return 1
+  if ! { printf '%s\n' "$merged" > "$tmp" && mv -f "$tmp" "$live"; }; then
+    rm -f "$tmp"
+    return 1
+  fi
+  save_claude_base "$base" "$state" || return 1
+  log_ok "updated $live (${changed:-replaced link with a file})"
+}
+
 # ---- 7. iTerm2: load preferences from the repo -------------------------------
 step_iterm2() {
   local folder="$DOTFILES_ROOT/iterm2"
