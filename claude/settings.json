@@ -24,7 +24,7 @@
     "worktrunk@worktrunk" : true
   },
   "env" : {
-
+    "CLAUDE_CODE_SUBAGENT_MODEL" : "sonnet"
   },
   "extraKnownMarketplaces" : {
     "claude-code-warp" : {
