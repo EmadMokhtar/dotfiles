@@ -8,21 +8,32 @@
 
 input=$(cat)
 
-# A jq program that prints true when the command runs `gh pr create` as a
-# command, and false when the words are only text in it (for example in a PR
-# body). It is a heuristic, not a shell parser:
-# 1. Drop heredoc bodies; keep the rest of the line that starts the heredoc.
-#    So `gh pr create` in backticks inside an unquoted heredoc is missed.
-# 2. Drop quoted strings. Keep a double-quoted string that holds $( or a
-#    backtick, because those run commands.
-# 3. Look for `gh pr create` where a command starts: at the beginning, after
-#    ; & | ( { ` or a newline, or after if/then/do/else/elif/!, with optional
-#    VAR=value words before it.
+# A jq program that prints true when the command looks like it runs
+# `gh pr create`. A missed review is worse than a needless one, so the match
+# is broad: any line with the words gh, pr and create, in that order. Only
+# heredoc bodies are dropped first, because a PR body written with
+# `--body-file - <<'EOF'` often mentions the command.
+# - `\` at the end of a line joins it to the next line.
+# - Every heredoc on a line is found (`<<TAG`, `<<-TAG`, `<<'TAG'`,
+#   `<<"TAG"`, any tag text), but not a here-string (`<<<`). Their bodies
+#   follow in order; each ends at a line that is only its tag.
+# - Text on the same line still counts, even inside quotes, for example
+#   `--body "next: gh pr create"`. That queues a needless review.
 read -r -d '' runs_gh_pr_create <<'JQ' || true
+def heredoc_tags:
+  [match("(?<!<)<<(?!<)-?[ \t]*(?:'(?<sq>[^'\n]+)'|\"(?<dq>[^\"\n]+)\"|(?<bare>[^ \t\n;&|<>()'\"`]+))"; "g")
+   | [.captures[] | .string | select(. != null)][0]];
+
 .tool_input.command // ""
-| gsub("<<-?[ \t]*(?<q>[\"']?)(?<tag>[A-Za-z_][A-Za-z0-9_]*)\\k<q>(?<rest>[^\n]*)\n(?:[^\n]*\n)*?[ \t]*\\k<tag>[ \t]*(?=\n|$)"; "<<\(.rest)")
-| gsub("(?<s>'[^']*'|\"(?:[^\"\\\\]|\\\\.)*\")"; if (.s | test("\\$\\(|`")) then .s else "''" end)
-| test("(?:^|[\n;&|({`])[ \t]*(?:(?:if|then|do|else|elif|!)[ \t]+)?(?:[A-Za-z_][A-Za-z0-9_]*=[^ \t\n;&|]*[ \t]+)*(?:[^ \t\n;&|(){}`'\"]*/)?gh[ \t]+pr[ \t]+create(?=[ \t\n;&|)}`]|$)")
+| gsub("\\\\\n"; " ")
+| split("\n")
+| reduce .[] as $line ({kept: [], tags: []};
+    if (.tags | length) > 0 then
+      if ($line | gsub("^[ \t]+|[ \t]+$"; "")) == .tags[0] then .tags |= .[1:] else . end
+    else
+      .kept += [$line] | .tags += ($line | heredoc_tags)
+    end)
+| any(.kept[]; test("\\bgh\\b.*\\bpr\\b.*\\bcreate\\b"))
 JQ
 
 [ "$(printf '%s' "$input" | jq -r "$runs_gh_pr_create")" = "true" ] || exit 0
