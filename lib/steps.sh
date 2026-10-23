@@ -166,6 +166,52 @@ step_secrets_map() {
   log_ok "$verb $map"
 }
 
+# ---- 6c. Claude Code settings: merge the repo base into the live file --------
+# ~/.claude/settings.json is a regular file, not a link. Tools such as the
+# StreamDeck plugin and iTerm2 add their own hooks by renaming a new file over
+# it, which replaces a link. The repo keeps only portable settings; they are
+# merged in (rules in lib/claude-settings-merge.jq) and the tools' entries stay.
+# CLAUDE_SETTINGS_BASE overrides the base file (used by tests).
+step_claude_settings() {
+  local base="${CLAUDE_SETTINGS_BASE:-$DOTFILES_ROOT/claude/settings.json}"
+  local live="$HOME/.claude/settings.json" merged changed tmp
+  jq empty "$base" 2>/dev/null || { log_err "$base is not valid JSON"; return 1; }
+
+  if [ -e "$live" ]; then
+    jq empty "$live" 2>/dev/null ||
+      { log_err "$live is not valid JSON; fix it by hand, then run again"; return 1; }
+    merged="$(jq -n --slurpfile live "$live" --slurpfile base "$base" --arg home "$HOME" \
+      -f "$DOTFILES_ROOT/lib/claude-settings-merge.jq")" || return 1
+    if [ ! -L "$live" ] && [ "$(jq -S . "$live")" = "$(jq -S . <<< "$merged")" ]; then
+      log_skip "$live already up to date"
+      return 0
+    fi
+    changed="$(jq -rn --slurpfile old "$live" --argjson new "$merged" \
+      '[$new | keys_unsorted[] as $k | select($old[0][$k] != $new[$k]) | $k] | join(", ")')"
+  else
+    merged="$(jq . "$base")" || return 1
+    changed="new file"
+  fi
+
+  if [ "$DRY_RUN" = "1" ]; then
+    printf '  [dry-run] update %s (%s)\n' "$live" "${changed:-replace link with a file}"
+    return 0
+  fi
+  mkdir -p "$HOME/.claude" || return 1
+  if [ -e "$live" ] || [ -L "$live" ]; then
+    mkdir -p "$BACKUP_DIR/.claude" || return 1
+    cp -P "$live" "$BACKUP_DIR/.claude/settings.json" || return 1
+  fi
+  # Write a new file next to the old one, then rename it over the old one.
+  # The rename replaces an old link instead of writing into the repo through it.
+  tmp="$(mktemp "$HOME/.claude/.settings.json.XXXXXX")" || return 1
+  if ! { printf '%s\n' "$merged" > "$tmp" && mv -f "$tmp" "$live"; }; then
+    rm -f "$tmp"
+    return 1
+  fi
+  log_ok "updated $live (${changed:-replaced link with a file})"
+}
+
 # ---- 7. iTerm2: load preferences from the repo -------------------------------
 step_iterm2() {
   local folder="$DOTFILES_ROOT/iterm2"

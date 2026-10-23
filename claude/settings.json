@@ -1,214 +1,130 @@
 {
-  "agentPushNotifEnabled" : true,
-  "editorMode" : "normal",
-  "effortLevel" : "xhigh",
-  "enabledPlugins" : {
-    "chrome-devtools-mcp@claude-plugins-official" : true,
-    "claude-code-setup@claude-plugins-official" : true,
-    "claude-md-management@claude-plugins-official" : true,
-    "code-review@claude-plugins-official" : true,
-    "context7@claude-plugins-official" : true,
-    "engram@engram" : false,
-    "frontend-design@claude-plugins-official" : true,
-    "github@claude-plugins-official" : true,
-    "gopls-lsp@claude-plugins-official" : true,
-    "impeccable@impeccable" : true,
-    "playwright@claude-plugins-official" : true,
-    "pr-review-toolkit@claude-plugins-official" : true,
-    "ralph-loop@claude-plugins-official" : true,
-    "skill-creator@claude-plugins-official" : true,
-    "superpowers@claude-plugins-official" : true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill" : true,
-    "warp@claude-code-warp" : true,
-    "watermarks-remover@watermarks-remover" : true,
-    "worktrunk@worktrunk" : true
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
-  "env" : {
-    "CLAUDE_CODE_SUBAGENT_MODEL" : "sonnet"
-  },
-  "extraKnownMarketplaces" : {
-    "claude-code-warp" : {
-      "source" : {
-        "repo" : "warpdotdev\/claude-code-warp",
-        "source" : "github"
-      }
-    },
-    "engram" : {
-      "source" : {
-        "repo" : "Gentleman-Programming\/engram",
-        "source" : "github"
-      }
-    },
-    "impeccable" : {
-      "source" : {
-        "repo" : "pbakaus\/impeccable",
-        "source" : "github"
-      }
-    },
-    "ui-ux-pro-max-skill" : {
-      "source" : {
-        "repo" : "nextlevelbuilder\/ui-ux-pro-max-skill",
-        "source" : "github"
-      }
-    },
-    "watermarks-remover" : {
-      "source" : {
-        "repo" : "guillaumemeyer\/watermarks-remover",
-        "source" : "github"
-      }
-    },
-    "worktrunk" : {
-      "source" : {
-        "repo" : "max-sixty\/worktrunk",
-        "source" : "github"
-      }
-    }
-  },
-  "hooks" : {
-    "Notification" : [
+  "model": "sonnet",
+  "hooks": {
+    "PostToolUse": [
       {
-        "hooks" : [
+        "matcher": "Bash",
+        "hooks": [
           {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
+            "type": "command",
+            "command": "~/.claude/hooks/pr-code-review.sh",
+            "timeout": 10,
+            "statusMessage": "Checking for a new pull request"
           }
         ]
       }
     ],
-    "PermissionRequest" : [
+    "SessionStart": [
       {
-        "hooks" : [
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
           {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
+            "type": "command",
+            "command": "~/.claude/hooks/cbm-session-reminder"
           }
         ]
       }
     ],
-    "PostToolUse" : [
+    "WorktreeCreate": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.claude\/hooks\/pr-code-review.sh",
-            "statusMessage" : "Checking for a new pull request",
-            "timeout" : 10,
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      }
-    ],
-    "PreToolUse" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "SessionEnd" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "SessionStart" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.claude\/hooks\/cbm-session-reminder",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "startup|resume|clear|compact"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "Stop" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "StopFailure" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "SubagentStop" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit" : [
-      {
-        "hooks" : [
-          {
-            "command" : "~\/.config\/iterm2\/cc-status",
-            "type" : "command"
-          }
-        ]
-      }
-    ],
-    "WorktreeCreate" : [
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/worktree-create.sh",
-            "type" : "command"
+            "type": "command",
+            "command": "bash ~/.claude/hooks/worktree-create.sh"
           }
         ]
       }
     ]
   },
-  "inputNeededNotifEnabled" : true,
-  "modelSettings" : {
-    "claude-opus-5" : {
-      "effortLevel" : "xhigh"
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "engram@engram": false,
+    "frontend-design@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true,
+    "impeccable@impeccable": true,
+    "playwright@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "warp@claude-code-warp": false,
+    "watermarks-remover@watermarks-remover": true,
+    "worktrunk@worktrunk": true,
+    "understand-anything@understand-anything": true,
+    "mattpocock-skills@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-code-warp": {
+      "source": {
+        "source": "github",
+        "repo": "warpdotdev/claude-code-warp"
+      }
+    },
+    "engram": {
+      "source": {
+        "source": "github",
+        "repo": "Gentleman-Programming/engram"
+      }
+    },
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    },
+    "ui-ux-pro-max-skill": {
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+      }
+    },
+    "watermarks-remover": {
+      "source": {
+        "source": "github",
+        "repo": "guillaumemeyer/watermarks-remover"
+      }
+    },
+    "worktrunk": {
+      "source": {
+        "source": "github",
+        "repo": "max-sixty/worktrunk"
+      }
+    },
+    "understand-anything": {
+      "source": {
+        "source": "github",
+        "repo": "Egonex-AI/Understand-Anything"
+      }
     }
   },
-  "outputStyle" : "Concise",
-  "remoteControlAtStartup" : false,
-  "skipDangerousModePermissionPrompt" : true,
-  "statusLine" : {
-    "command" : "bash ~\/.claude\/statusline-command.sh",
-    "type" : "command"
+  "outputStyle": "Concise",
+  "effortLevel": "xhigh",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-sonnet-5-5": {
+      "effortLevel": "xhigh"
+    }
   },
-  "tui" : "fullscreen",
-  "verbose" : true
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "editorMode": "normal",
+  "verbose": true,
+  "remoteControlAtStartup": false,
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }

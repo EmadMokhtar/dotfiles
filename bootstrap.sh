@@ -65,6 +65,7 @@ run_step "oh-my-zsh, plugins and theme" step_omz
 run_step "Version managers (goenv, nvm)" step_version_managers
 run_step "Symlinks" step_links
 run_step "Secrets map" step_secrets_map
+run_step "Claude Code settings" step_claude_settings
 run_step "iTerm2 preferences" step_iterm2
 if [ "$SKIP_MACOS" = "1" ]; then
   log_skip "macOS defaults (--no-macos)"
