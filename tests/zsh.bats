@@ -49,7 +49,7 @@ setup() { make_sandbox; }
   stub secret
   run zsh -ic 'claude --version'
   [ "$status" -eq 0 ]
-  [ "$(calls_matching 'secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN -- claude --version')" -eq 1 ]
+  [ "$(calls_matching 'secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN CLAUDE_CODE_OAUTH_TOKEN -- claude --version')" -eq 1 ]
 }
 
 @test "claude is not wrapped when secret is not installed" {

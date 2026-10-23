@@ -40,11 +40,14 @@ command -v terraform >/dev/null 2>&1 && complete -o nospace -C "$(command -v ter
 command -v wt >/dev/null 2>&1 && eval "$(command wt config shell init zsh)"
 
 # ---- Claude Code: secrets from `secret` -------------------------------------
-# The GitHub MCP plugin reads ${GITHUB_PERSONAL_ACCESS_TOKEN}. `secret` reads it
-# (see ~/.config/secrets/secrets.map) and gives it to this one process only.
-# --optional: start claude even when the token cannot be read.
+# The GitHub MCP plugin reads ${GITHUB_PERSONAL_ACCESS_TOKEN}. Claude Code signs
+# in with ${CLAUDE_CODE_OAUTH_TOKEN} (the subscription). `secret` reads them
+# (see ~/.config/secrets/secrets.map) and gives them to this one process only.
+# ANTHROPIC_API_KEY is not passed: Claude Code would use it before the OAuth
+# token and bill the API account.
+# --optional: start claude even when a token cannot be read.
 if command -v secret >/dev/null 2>&1; then
-  claude() { secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN -- claude "$@"; }
+  claude() { secret run --optional GITHUB_PERSONAL_ACCESS_TOKEN CLAUDE_CODE_OAUTH_TOKEN -- claude "$@"; }
 fi
 
 unset _brew_prefix

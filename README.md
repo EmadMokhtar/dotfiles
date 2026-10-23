@@ -90,6 +90,12 @@ app Zed    OPENAI_API_KEY,ANTHROPIC_API_KEY
 app Zed    OLLAMA_API_KEY
 ```
 
+The Claude desktop app is on an `app Claude` line. Quit it, then start it from
+a terminal with `secret open Claude`. Its Code sessions sign in with the app's
+own account and drop `CLAUDE_CODE_OAUTH_TOKEN`, so it needs only the GitHub
+token. The app also copies the exported variables of your login shell, so never
+export a secret in `zshrc`.
+
 Rules and limits:
 
 - `secret set` takes values up to 1500 bytes. For a longer one, use an
