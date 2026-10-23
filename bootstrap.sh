@@ -4,8 +4,9 @@
 #   ./bootstrap.sh [--dry-run] [--extra] [--no-brew] [--no-macos] [--help]
 #
 # Steps: Xcode CLT -> Homebrew -> brew bundle -> oh-my-zsh -> goenv/nvm ->
-#        symlinks -> secrets map -> iTerm2 prefs -> macOS defaults. A failing step is reported
-#        at the end; the others still run.
+#        symlinks -> secrets map -> Claude Code settings (merged into
+#        ~/.claude/settings.json) -> iTerm2 prefs -> macOS defaults. A failing
+#        step is reported at the end; the others still run.
 
 DOTFILES_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export DOTFILES_ROOT

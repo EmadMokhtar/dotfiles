@@ -8,6 +8,7 @@ setup() {
   . "$REPO_ROOT/lib/link.sh"
   . "$REPO_ROOT/lib/steps.sh"
   LIVE="$HOME/.claude/settings.json"
+  STATE="$HOME/.claude/.dotfiles-settings-base.json"
   mkdir -p "$HOME/.claude"
   export CLAUDE_SETTINGS_BASE="$BATS_TEST_TMPDIR/base.json"
   cat > "$CLAUDE_SETTINGS_BASE" <<'EOF'
@@ -132,4 +133,104 @@ EOF
   [[ "$output" == *"model"* ]] || false
   [ "$(jq -r .model "$LIVE")" = "opus" ]
   [ ! -e "$BACKUP_DIR" ]
+  [ ! -e "$STATE" ]
+}
+
+# ---- three-way merge: the base applied last time is saved in $STATE ----------
+
+@test "claude settings: saves the applied base for the next run" {
+  run step_claude_settings
+  [ "$status" -eq 0 ]
+  same_json "$STATE" "$CLAUDE_SETTINGS_BASE"
+}
+
+@test "claude settings: an up-to-date live file still gets the saved base" {
+  cp "$CLAUDE_SETTINGS_BASE" "$LIVE"
+  run step_claude_settings
+  [[ "$output" == *"already up to date"* ]] || false
+  same_json "$STATE" "$CLAUDE_SETTINGS_BASE"
+}
+
+@test "claude settings: a value changed locally stays" {
+  cp "$CLAUDE_SETTINGS_BASE" "$STATE"
+  jq '.model = "opus"' "$CLAUDE_SETTINGS_BASE" > "$LIVE"
+  run step_claude_settings
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .model "$LIVE")" = "opus" ]
+}
+
+@test "claude settings: a repo change applies when the local value is unchanged" {
+  cp "$CLAUDE_SETTINGS_BASE" "$STATE"
+  cp "$CLAUDE_SETTINGS_BASE" "$LIVE"
+  jq '.model = "haiku"' "$STATE" > "$CLAUDE_SETTINGS_BASE"
+  run step_claude_settings
+  [ "$(jq -r .model "$LIVE")" = "haiku" ]
+}
+
+@test "claude settings: a hook whose matcher changed in the repo is replaced, not doubled" {
+  cp "$CLAUDE_SETTINGS_BASE" "$STATE"
+  cp "$CLAUDE_SETTINGS_BASE" "$LIVE"
+  jq '.hooks.PostToolUse[0].matcher = "Bash|Write"' "$STATE" > "$CLAUDE_SETTINGS_BASE"
+  run step_claude_settings
+  [ "$(jq '.hooks.PostToolUse | length' "$LIVE")" -eq 1 ]
+  [ "$(jq -r '.hooks.PostToolUse[0].matcher' "$LIVE")" = "Bash|Write" ]
+}
+
+@test "claude settings: a hook and a plugin removed from the repo are removed, a tool's hook stays" {
+  cp "$CLAUDE_SETTINGS_BASE" "$STATE"
+  jq '.hooks.PostToolUse += [{"matcher": ".*", "hooks": [{"type": "command", "command": "/opt/tool/hook"}]}]' \
+    "$CLAUDE_SETTINGS_BASE" > "$LIVE"
+  jq 'del(.hooks) | del(.enabledPlugins["a@m"])' "$STATE" > "$CLAUDE_SETTINGS_BASE"
+  run step_claude_settings
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '[.hooks.PostToolUse[].hooks[0].command] | join(",")' "$LIVE")" = "/opt/tool/hook" ]
+  [ "$(jq '.enabledPlugins | has("a@m")' "$LIVE")" = "false" ]
+}
+
+@test "claude settings: an entry deleted locally is not added back" {
+  cp "$CLAUDE_SETTINGS_BASE" "$STATE"
+  jq 'del(.enabledPlugins["a@m"])' "$CLAUDE_SETTINGS_BASE" > "$LIVE"
+  run step_claude_settings
+  [ "$(jq '.enabledPlugins | has("a@m")' "$LIVE")" = "false" ]
+}
+
+# ---- review fixes --------------------------------------------------------------
+
+@test "claude settings: ~, \$HOME, \${HOME} and the full path in a command are the same hook" {
+  jq '.hooks.PostToolUse[0].hooks[0].command = "bash ~/.claude/hooks/review.sh"' \
+    "$CLAUDE_SETTINGS_BASE" > "$BATS_TEST_TMPDIR/b.json" && mv "$BATS_TEST_TMPDIR/b.json" "$CLAUDE_SETTINGS_BASE"
+  local form
+  for form in "bash $HOME/.claude/hooks/review.sh" 'bash $HOME/.claude/hooks/review.sh' 'bash ${HOME}/.claude/hooks/review.sh'; do
+    jq --arg c "$form" '.hooks.PostToolUse[0].hooks[0].command = $c' "$CLAUDE_SETTINGS_BASE" > "$LIVE"
+    rm -f "$STATE"
+    run step_claude_settings
+    [ "$(jq '.hooks.PostToolUse | length' "$LIVE")" -eq 1 ] || { echo "duplicated for: $form"; return 1; }
+  done
+}
+
+@test "claude settings: the backup of a linked live file holds its content" {
+  ln -s "$CLAUDE_SETTINGS_BASE" "$LIVE"
+  run step_claude_settings
+  [ -f "$BACKUP_DIR/.claude/settings.json" ] && [ ! -L "$BACKUP_DIR/.claude/settings.json" ]
+  same_json "$BACKUP_DIR/.claude/settings.json" "$CLAUDE_SETTINGS_BASE"
+}
+
+@test "claude settings: refuses a live file that is not one JSON object" {
+  local content
+  for content in '[1]' '"x"' '{"a":1}{"b":2}'; do
+    printf '%s' "$content" > "$LIVE"
+    run step_claude_settings
+    [ "$status" -ne 0 ] || { echo "accepted: $content"; return 1; }
+    [ "$(cat "$LIVE")" = "$content" ] || { echo "changed: $content"; return 1; }
+  done
+}
+
+@test "claude settings: a missing jq gives a clear error" {
+  PATH="$STUB_BIN:/bin" run step_claude_settings
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"jq is not installed"* ]] || false
+}
+
+@test "claude settings: the Brewfile installs jq" {
+  grep -qE '^brew "jq"' "$REPO_ROOT/brew/Brewfile"
 }
