@@ -93,6 +93,17 @@
             "type" : "command"
           }
         ]
+      },
+      {
+        "hooks" : [
+          {
+            "command" : "~\/.claude\/hooks\/pr-code-review.sh",
+            "statusMessage" : "Checking for a new pull request",
+            "timeout" : 10,
+            "type" : "command"
+          }
+        ],
+        "matcher" : "Bash"
       }
     ],
     "PreToolUse" : [
