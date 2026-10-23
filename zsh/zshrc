@@ -17,7 +17,7 @@ ENABLE_CORRECTION="true"
 COMPLETION_WAITING_DOTS="true"
 export UPDATE_ZSH_DAYS=1
 ZSH_DOTENV_PROMPT=false
-plugins=(git docker github httpie macos pip pep8 python pylint pyenv celery brew golang zsh-autosuggestions zsh-syntax-highlighting zsh-completions dotenv kubectl)
+plugins=(gh docker git httpie macos pip pep8 python pylint pyenv celery brew golang zsh-autosuggestions zsh-syntax-highlighting zsh-completions dotenv kubectl)
 [[ -f "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
 
 # ---- modules ---------------------------------------------------------------
